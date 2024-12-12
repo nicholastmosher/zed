@@ -113,6 +113,12 @@ pub struct BufferSnapshot {
     pub version: clock::Global,
 }
 
+impl std::fmt::Debug for BufferSnapshot {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("BufferSnapshot").finish()
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct HistoryEntry {
     transaction: Transaction,

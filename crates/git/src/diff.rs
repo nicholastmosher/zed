@@ -190,8 +190,8 @@ impl BufferDiff {
         *self = Self::build(&diff_base.to_string(), buffer).await;
     }
 
-    #[cfg(test)]
-    fn hunks<'a>(&'a self, text: &'a BufferSnapshot) -> impl 'a + Iterator<Item = DiffHunk> {
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn hunks<'a>(&'a self, text: &'a BufferSnapshot) -> impl 'a + Iterator<Item = DiffHunk> {
         let start = text.anchor_before(Point::new(0, 0));
         let end = text.anchor_after(Point::new(u32::MAX, u32::MAX));
         self.hunks_intersecting_range(start..end, text)
@@ -237,48 +237,46 @@ impl BufferDiff {
             let kind = line.origin_value();
             let content_offset = line.content_offset() as isize;
             let content_len = line.content().len() as isize;
+            match kind {
+                GitDiffLineType::Addition => {
+                    *buffer_row_divergence += 1;
+                    let row = line.new_lineno().unwrap().saturating_sub(1);
 
-            if kind == GitDiffLineType::Addition {
-                *buffer_row_divergence += 1;
-                let row = line.new_lineno().unwrap().saturating_sub(1);
-
-                match &mut buffer_row_range {
-                    Some(buffer_row_range) => buffer_row_range.end = row + 1,
-                    None => buffer_row_range = Some(row..row + 1),
+                    match &mut buffer_row_range {
+                        Some(buffer_row_range) => buffer_row_range.end = row + 1,
+                        None => buffer_row_range = Some(row..row + 1),
+                    }
                 }
-            }
+                GitDiffLineType::Deletion => {
+                    let end = content_offset + content_len;
 
-            if kind == GitDiffLineType::Deletion {
-                let end = content_offset + content_len;
+                    match &mut diff_base_byte_range {
+                        Some(head_byte_range) => head_byte_range.end = end as usize,
+                        None => diff_base_byte_range = Some(content_offset as usize..end as usize),
+                    }
 
-                match &mut diff_base_byte_range {
-                    Some(head_byte_range) => head_byte_range.end = end as usize,
-                    None => diff_base_byte_range = Some(content_offset as usize..end as usize),
+                    if first_deletion_buffer_row.is_none() {
+                        let old_row = line.old_lineno().unwrap().saturating_sub(1);
+                        let row = old_row as i64 + *buffer_row_divergence;
+                        first_deletion_buffer_row = Some(row as u32);
+                    }
+
+                    *buffer_row_divergence -= 1;
                 }
-
-                if first_deletion_buffer_row.is_none() {
-                    let old_row = line.old_lineno().unwrap().saturating_sub(1);
-                    let row = old_row as i64 + *buffer_row_divergence;
-                    first_deletion_buffer_row = Some(row as u32);
-                }
-
-                *buffer_row_divergence -= 1;
+                _ => {}
             }
         }
 
-        //unwrap_or deletion without addition
         let buffer_row_range = buffer_row_range.unwrap_or_else(|| {
-            //we cannot have an addition-less hunk without deletion(s) or else there would be no hunk
+            // Pure deletion hunk without addition.
             let row = first_deletion_buffer_row.unwrap();
             row..row
         });
-
-        //unwrap_or addition without deletion
-        let diff_base_byte_range = diff_base_byte_range.unwrap_or(0..0);
-
         let start = Point::new(buffer_row_range.start, 0);
         let end = Point::new(buffer_row_range.end, 0);
         let buffer_range = buffer.anchor_before(start)..buffer.anchor_before(end);
+        // For a pure-addition hunk, it doesn't matter where diff_base_byte_range is located, just that it's empty.
+        let diff_base_byte_range = diff_base_byte_range.unwrap_or(0..0);
         InternalDiffHunk {
             buffer_range,
             diff_base_byte_range,
