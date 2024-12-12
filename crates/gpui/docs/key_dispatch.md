@@ -91,10 +91,10 @@ If you had opted for the more complex type definition, you'd provide the seriali
 {
   "context": "menu",
   "bindings": {
-    "up": ["menu::Move", {direction: "up", select: false}]
-    "down": ["menu::Move", {direction: "down", select: false}]
-    "shift-up": ["menu::Move", {direction: "up", select: true}]
-    "shift-down": ["menu::Move", {direction: "down", select: true}]
+    "up": ["menu::Move", {"direction": "up", "select": false}]
+    "down": ["menu::Move", {"direction": "down", "select": false}]
+    "shift-up": ["menu::Move", {"direction": "up", "select": true}]
+    "shift-down": ["menu::Move", {"direction": "down", "select": true}]
   }
 }
 ```
