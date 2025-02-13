@@ -493,21 +493,28 @@ impl NotificationPanel {
             return false;
         }
 
-        if let Notification::ChannelMessageMention { channel_id, .. } = &notification {
-            if let Some(workspace) = self.workspace.upgrade() {
-                return if let Some(panel) = workspace.read(cx).panel::<ChatPanel>(cx) {
-                    let panel = panel.read(cx);
-                    panel.is_scrolled_to_bottom()
-                        && panel
-                            .active_chat()
-                            .map_or(false, |chat| chat.read(cx).channel_id.0 == *channel_id)
-                } else {
-                    false
-                };
-            }
+        let Notification::ChannelMessageMention { channel_id, .. } = &notification else {
+            return false;
+        };
+
+        let Some(workspace) = self.workspace.upgrade() else {
+            return false;
+        };
+
+        let Some(panel) = workspace.read(cx).panel::<ChatPanel>(cx) else {
+            return false;
+        };
+
+        let panel = panel.read(cx);
+        if !panel.is_scrolled_to_bottom() {
+            return false;
         }
 
-        false
+        let Some(chat) = panel.active_chat() else {
+            return false;
+        };
+
+        chat.read(cx).channel_id.0 == *channel_id
     }
 
     fn on_notification_event(
