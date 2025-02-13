@@ -1,0 +1,15 @@
+[package]
+name = "libp2p_panel"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+path = "src/libp2p_panel.rs"
+
+[dependencies]
+gpui.workspace = true
+workspace.workspace = true
+
+[lints]
+workspace = true

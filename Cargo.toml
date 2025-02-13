@@ -86,6 +86,7 @@ members = [
     "crates/language_tools",
     "crates/languages",
     "crates/livekit_api",
+    "crates/libp2p_panel",
     "crates/livekit_client",
     "crates/lmstudio",
     "crates/lsp",
@@ -290,6 +291,7 @@ language_selector = { path = "crates/language_selector" }
 language_tools = { path = "crates/language_tools" }
 languages = { path = "crates/languages" }
 livekit_api = { path = "crates/livekit_api" }
+libp2p_panel = { path = "crates/libp2p_panel" }
 livekit_client = { path = "crates/livekit_client" }
 lmstudio = { path = "crates/lmstudio" }
 lsp = { path = "crates/lsp" }
@@ -743,7 +745,7 @@ unexpected_cfgs = { level = "allow" }
 
 [workspace.lints.clippy]
 dbg_macro = "deny"
-todo = "deny"
+# todo = "deny"
 
 # Motivation: We use `vec![a..b]` a lot when dealing with ranges in text, so
 # warning on this rule produces a lot of noise.

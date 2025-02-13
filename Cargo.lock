@@ -7937,6 +7937,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "libp2p_panel"
+version = "0.1.0"
+dependencies = [
+ "gpui",
+ "workspace",
+]
+
+[[package]]
 name = "libredox"
 version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -18174,6 +18182,7 @@ dependencies = [
  "language_tools",
  "languages",
  "libc",
+ "libp2p_panel",
  "log",
  "markdown_preview",
  "menu",

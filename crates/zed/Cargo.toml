@@ -76,6 +76,7 @@ language_selector.workspace = true
 language_tools.workspace = true
 languages = { workspace = true, features = ["load-grammars"] }
 libc.workspace = true
+libp2p_panel.workspace = true
 log.workspace = true
 markdown_preview.workspace = true
 menu.workspace = true
