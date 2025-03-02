@@ -164,6 +164,15 @@ impl std::fmt::Debug for EntityMessageSubscriber {
     }
 }
 
+impl<T> From<&Arc<T>> for AnyProtoClient
+where
+    T: ProtoClient + 'static,
+{
+    fn from(client: &Arc<T>) -> Self {
+        Self(client.clone())
+    }
+}
+
 impl<T> From<Arc<T>> for AnyProtoClient
 where
     T: ProtoClient + 'static,

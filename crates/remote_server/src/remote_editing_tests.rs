@@ -22,6 +22,7 @@ use project::{
     Project, ProjectPath,
     search::{SearchQuery, SearchResult},
 };
+use release_channel::ReleaseChannelPlugin;
 use remote::SshRemoteClient;
 use serde_json::json;
 use settings::{Settings, SettingsLocation, SettingsStore, initial_server_settings_content};
@@ -1622,10 +1623,12 @@ pub async fn init_test(
 ) -> (Entity<Project>, Entity<HeadlessProject>) {
     let server_fs = server_fs.clone();
     cx.update(|cx| {
-        release_channel::init(SemanticVersion::default(), cx);
+        // was -> release_channel::init(SemanticVersion::default(), cx);
+        ReleaseChannelPlugin::new(SemanticVersion::default(), None).build(cx);
     });
     server_cx.update(|cx| {
-        release_channel::init(SemanticVersion::default(), cx);
+        // was -> release_channel::init(SemanticVersion::default(), cx);
+        ReleaseChannelPlugin::new(SemanticVersion::default(), None).build(cx);
     });
     init_logger();
 
@@ -1683,12 +1686,12 @@ fn build_project(ssh: Entity<SshRemoteClient>, cx: &mut TestAppContext) -> Entit
     });
 
     let node = NodeRuntime::unavailable();
-    let user_store = cx.new(|cx| UserStore::new(client.clone(), cx));
+    let user_store = cx.new(|cx| UserStore::new(cx));
     let languages = Arc::new(LanguageRegistry::test(cx.executor()));
     let fs = FakeFs::new(cx.executor());
 
     cx.update(|cx| {
-        Project::init(&client, cx);
+        Project::init(cx);
         language::init(cx);
     });
 

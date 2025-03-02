@@ -1,6 +1,6 @@
 use anyhow::{Context as _, Result};
 use channel::{ChannelMessage, ChannelMessageId, ChannelStore};
-use client::{ChannelId, Client, UserStore};
+use client::{ChannelId, Client, GlobalClient, GlobalUserStore, UserStore};
 use collections::HashMap;
 use db::smol::stream::StreamExt;
 use gpui::{App, AppContext as _, AsyncApp, Context, Entity, EventEmitter, Global, Task};
@@ -10,8 +10,9 @@ use sum_tree::{Bias, SumTree};
 use time::OffsetDateTime;
 use util::ResultExt;
 
-pub fn init(client: Arc<Client>, user_store: Entity<UserStore>, cx: &mut App) {
-    let notification_store = cx.new(|cx| NotificationStore::new(client, user_store, cx));
+pub fn init(cx: &mut App) {
+    let user_store = cx.global::<GlobalUserStore>().0.clone();
+    let notification_store = cx.new(|cx| NotificationStore::new(user_store, cx));
     cx.set_global(GlobalNotificationStore(notification_store));
 }
 
@@ -74,7 +75,8 @@ impl NotificationStore {
         cx.global::<GlobalNotificationStore>().0.clone()
     }
 
-    pub fn new(client: Arc<Client>, user_store: Entity<UserStore>, cx: &mut Context<Self>) -> Self {
+    pub fn new(user_store: Entity<UserStore>, cx: &mut Context<Self>) -> Self {
+        let client = cx.read_global::<GlobalClient, _>(|client, _| client.0.clone());
         let mut connection_status = client.status();
         let watch_connection_status = cx.spawn(async move |this, cx| {
             while let Some(status) = connection_status.next().await {

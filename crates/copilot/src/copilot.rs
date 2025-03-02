@@ -13,7 +13,7 @@ use gpui::{
     App, AppContext as _, AsyncApp, Context, Entity, EntityId, EventEmitter, Global, Task,
     WeakEntity, actions,
 };
-use http_client::HttpClient;
+
 use language::language_settings::CopilotSettings;
 use language::{
     Anchor, Bias, Buffer, BufferSnapshot, Language, PointUtf16, ToPointUtf16,
@@ -36,6 +36,7 @@ use std::{
     sync::Arc,
 };
 use util::{ResultExt, fs::remove_matching};
+use workspace::AppState;
 use workspace::Workspace;
 
 pub use crate::copilot_completion_provider::CopilotCompletionProvider;
@@ -53,14 +54,12 @@ actions!(
     ]
 );
 
-pub fn init(
-    new_server_id: LanguageServerId,
-    fs: Arc<dyn Fs>,
-    http: Arc<dyn HttpClient>,
-    node_runtime: NodeRuntime,
-    cx: &mut App,
-) {
-    copilot_chat::init(fs.clone(), http.clone(), cx);
+pub fn init(cx: &mut App) {
+    let fs = AppState::global(cx).fs.clone();
+    let node_runtime = AppState::global(cx).node_runtime.clone();
+    let new_server_id = AppState::global(cx).languages.next_language_server_id();
+
+    copilot_chat::init(fs.clone(), cx);
 
     let copilot = cx.new({
         let node_runtime = node_runtime.clone();

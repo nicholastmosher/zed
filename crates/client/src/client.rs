@@ -145,8 +145,9 @@ pub fn init_settings(cx: &mut App) {
     ProxySettings::register(cx);
 }
 
-pub fn init(client: &Arc<Client>, cx: &mut App) {
-    let client = Arc::downgrade(client);
+pub fn init(cx: &mut App) {
+    let client = cx.global::<GlobalClient>();
+    let client = Arc::downgrade(&client.0);
     cx.on_action({
         let client = client.clone();
         move |_: &SignIn, cx| {
@@ -194,7 +195,7 @@ pub fn init(client: &Arc<Client>, cx: &mut App) {
     });
 }
 
-struct GlobalClient(Arc<Client>);
+pub struct GlobalClient(pub Arc<Client>);
 
 impl Global for GlobalClient {}
 

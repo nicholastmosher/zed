@@ -4,7 +4,7 @@ pub mod inline_completion_registry;
 #[cfg(target_os = "macos")]
 pub(crate) mod mac_only_instance;
 mod migrate;
-mod open_listener;
+pub mod open_listener;
 mod quick_action_bar;
 #[cfg(target_os = "windows")]
 pub(crate) mod windows_only_instance;
@@ -27,9 +27,9 @@ use git_ui::git_panel::GitPanel;
 use git_ui::project_diff::ProjectDiffToolbar;
 use gpui::{
     Action, App, AppContext as _, AsyncWindowContext, Context, DismissEvent, Element, Entity,
-    Focusable, KeyBinding, ParentElement, PathPromptOptions, PromptLevel, ReadGlobal, SharedString,
-    Styled, Task, TitlebarOptions, UpdateGlobal, Window, WindowKind, WindowOptions, actions,
-    image_cache, point, px, retain_all,
+    Focusable, KeyBinding, ParentElement, PathPromptOptions, Plugin, PromptLevel, ReadGlobal,
+    SharedString, Styled, Task, TitlebarOptions, UpdateGlobal, Window, WindowKind, WindowOptions,
+    actions, image_cache, point, px, retain_all,
 };
 use image_viewer::ImageInfo;
 use migrate::{MigrationBanner, MigrationEvent, MigrationNotification, MigrationType};
@@ -42,7 +42,7 @@ use paths::{
 };
 use project::{DirectoryLister, ProjectItem};
 use project_panel::ProjectPanel;
-use prompt_store::PromptBuilder;
+use prompt_store::{GlobalPromptBuilder, PromptBuilder};
 use quick_action_bar::QuickActionBar;
 use recent_projects::open_ssh_project;
 use release_channel::{AppCommitSha, ReleaseChannel};
@@ -54,6 +54,7 @@ use settings::{
     initial_tasks_content, update_settings_file,
 };
 use std::path::PathBuf;
+use std::sync::Mutex;
 use std::sync::atomic::{self, AtomicBool};
 use std::{borrow::Cow, path::Path, sync::Arc};
 use terminal_view::terminal_panel::{self, TerminalPanel};
@@ -161,11 +162,9 @@ pub fn build_window_options(display_uuid: Option<Uuid>, cx: &mut App) -> WindowO
     }
 }
 
-pub fn initialize_workspace(
-    app_state: Arc<AppState>,
-    prompt_builder: Arc<PromptBuilder>,
-    cx: &mut App,
-) {
+pub fn initialize_workspace(cx: &mut App) {
+    let app_state = AppState::global(cx);
+    let prompt_builder = cx.global::<GlobalPromptBuilder>().0.clone();
     let mut _on_close_subscription = bind_on_window_closed(cx);
     cx.observe_global::<SettingsStore>(move |cx| {
         _on_close_subscription = bind_on_window_closed(cx);
@@ -492,7 +491,7 @@ fn register_actions(
             window.toggle_fullscreen();
         })
         .register_action(|_, action: &OpenZedUrl, _, cx| {
-            OpenListener::global(cx).open_urls(vec![action.url.clone()])
+            OpenListenerTx::global(cx).open_urls(vec![action.url.clone()])
         })
         .register_action(|_, action: &OpenBrowser, _window, cx| cx.open_url(&action.url))
         .register_action(|workspace, _: &workspace::Open, window, cx| {
@@ -1119,6 +1118,41 @@ fn open_log_file(workspace: &mut Workspace, window: &mut Window, cx: &mut Contex
         .detach();
 }
 
+pub struct SettingsFilePlugin {
+    user_settings_file_rx: Mutex<Option<mpsc::UnboundedReceiver<String>>>,
+    global_settings_file_rx: Mutex<Option<mpsc::UnboundedReceiver<String>>>,
+    settings_changed:
+        Mutex<Option<Box<dyn Fn(Option<anyhow::Error>, &mut App) + Send + Sync + 'static>>>,
+}
+
+impl SettingsFilePlugin {
+    pub fn new(
+        user_settings_file_rx: mpsc::UnboundedReceiver<String>,
+        global_settings_file_rx: mpsc::UnboundedReceiver<String>,
+        settings_changed: impl Fn(Option<anyhow::Error>, &mut App) + Send + Sync + 'static,
+    ) -> Self {
+        Self {
+            user_settings_file_rx: Mutex::new(Some(user_settings_file_rx)),
+            global_settings_file_rx: Mutex::new(Some(global_settings_file_rx)),
+            settings_changed: Mutex::new(Some(Box::new(settings_changed))),
+        }
+    }
+}
+
+impl Plugin for SettingsFilePlugin {
+    fn build(&self, cx: &mut App) {
+        let user_settings_file_rx = self.user_settings_file_rx.lock().unwrap().take().unwrap();
+        let global_settings_file_rx = self.global_settings_file_rx.lock().unwrap().take().unwrap();
+        let settings_changed = self.settings_changed.lock().unwrap().take().unwrap();
+        handle_settings_file_changes(
+            user_settings_file_rx,
+            global_settings_file_rx,
+            cx,
+            settings_changed,
+        );
+    }
+}
+
 pub fn handle_settings_file_changes(
     mut user_settings_file_rx: mpsc::UnboundedReceiver<String>,
     mut global_settings_file_rx: mpsc::UnboundedReceiver<String>,
@@ -1205,6 +1239,25 @@ pub fn handle_settings_file_changes(
         }
     })
     .detach();
+}
+
+pub struct KeymapFileChangesPlugin {
+    keymap_file_rx: Mutex<Option<mpsc::UnboundedReceiver<String>>>,
+}
+
+impl KeymapFileChangesPlugin {
+    pub fn new(keymap_file_rx: mpsc::UnboundedReceiver<String>) -> Self {
+        Self {
+            keymap_file_rx: Mutex::new(Some(keymap_file_rx)),
+        }
+    }
+}
+
+impl Plugin for KeymapFileChangesPlugin {
+    fn build(&self, cx: &mut App) {
+        let keymap_file_rx = self.keymap_file_rx.lock().unwrap().take().unwrap();
+        handle_keymap_file_changes(keymap_file_rx, cx);
+    }
 }
 
 pub fn handle_keymap_file_changes(
@@ -1737,6 +1790,7 @@ fn open_settings_file(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use agent::GlobalIsEval;
     use assets::Assets;
     use collections::HashSet;
     use editor::{DisplayPoint, Editor, display_map::DisplayRow, scroll::Autoscroll};
@@ -1744,8 +1798,10 @@ mod tests {
         Action, AnyWindowHandle, App, AssetSource, BorrowAppContext, SemanticVersion,
         TestAppContext, UpdateGlobal, VisualTestContext, WindowHandle, actions,
     };
-    use language::{LanguageMatcher, LanguageRegistry};
+    use language::{GlobalLanguageRegistry, LanguageMatcher, LanguageRegistry};
+    use node_runtime::GlobalNodeRuntime;
     use project::{Project, ProjectPath, WorktreeSettings, project_settings::ProjectSettings};
+    use release_channel::ReleaseChannelPlugin;
     use serde_json::json;
     use settings::{SettingsStore, watch_config_file};
     use std::{
@@ -1755,8 +1811,8 @@ mod tests {
     use theme::{ThemeRegistry, ThemeSettings};
     use util::{path, separator};
     use workspace::{
-        NewFile, OpenOptions, OpenVisible, SERIALIZATION_THROTTLE_TIME, SaveIntent, SplitDirection,
-        WorkspaceHandle,
+        GlobalAppState, NewFile, OpenOptions, OpenVisible, SERIALIZATION_THROTTLE_TIME, SaveIntent,
+        SplitDirection, WorkspaceHandle,
         item::{Item, ItemHandle},
         open_new, open_paths, pane,
     };
@@ -3892,9 +3948,9 @@ mod tests {
             let app_state = AppState::test(cx);
 
             theme::init(theme::LoadThemes::JustBase, cx);
-            client::init(&app_state.client, cx);
+            client::init(cx);
             language::init(cx);
-            workspace::init(app_state.clone(), cx);
+            workspace::init(cx);
             welcome::init(cx);
             Project::init_settings(cx);
             app_state
@@ -4230,9 +4286,11 @@ mod tests {
         cx.set_global(settings);
         let languages = LanguageRegistry::test(cx.executor());
         let languages = Arc::new(languages);
+        cx.set_global(GlobalLanguageRegistry(languages.clone()));
         let node_runtime = node_runtime::NodeRuntime::unavailable();
+        cx.set_global(GlobalNodeRuntime(node_runtime));
         cx.update(|cx| {
-            languages::init(languages.clone(), node_runtime, cx);
+            languages::init(cx);
         });
         for name in languages.language_names() {
             languages
@@ -4258,47 +4316,46 @@ mod tests {
             let state = Arc::get_mut(&mut app_state).unwrap();
             state.build_window_options = build_window_options;
 
-            app_state.languages.add(markdown_language());
+            {
+                // Set here after Arc::get_mut
+                cx.set_global(GlobalAppState(app_state.clone()));
+            }
 
+            app_state.languages.add(markdown_language());
             gpui_tokio::init(cx);
             vim_mode_setting::init(cx);
             theme::init(theme::LoadThemes::JustBase, cx);
             audio::init((), cx);
-            channel::init(&app_state.client, app_state.user_store.clone(), cx);
-            call::init(app_state.client.clone(), app_state.user_store.clone(), cx);
-            notifications::init(app_state.client.clone(), app_state.user_store.clone(), cx);
-            workspace::init(app_state.clone(), cx);
+            channel::init(cx);
+            call::init(cx);
+            notifications::init(cx);
+            workspace::init(cx);
             Project::init_settings(cx);
-            release_channel::init(SemanticVersion::default(), cx);
+            // cx.add_plugins(ReleaseChannelPlugin::new(SemanticVersion::default(), None));
+            ReleaseChannelPlugin::new(SemanticVersion::default(), None).build(cx);
             command_palette::init(cx);
             language::init(cx);
             editor::init(cx);
-            collab_ui::init(&app_state, cx);
+            collab_ui::init(cx);
             git_ui::init(cx);
             project_panel::init(cx);
             outline_panel::init(cx);
             terminal_view::init(cx);
-            copilot::copilot_chat::init(app_state.fs.clone(), app_state.client.http_client(), cx);
+            copilot::copilot_chat::init(app_state.fs.clone(), cx);
             image_viewer::init(cx);
-            language_model::init(app_state.client.clone(), cx);
-            language_models::init(
-                app_state.user_store.clone(),
-                app_state.client.clone(),
-                app_state.fs.clone(),
-                cx,
-            );
+            language_model::init(cx);
+            language_models::init(cx);
             web_search::init(cx);
             web_search_providers::init(app_state.client.clone(), cx);
-            let prompt_builder = PromptBuilder::load(app_state.fs.clone(), false, cx);
-            agent::init(
-                app_state.fs.clone(),
-                app_state.client.clone(),
-                prompt_builder.clone(),
-                app_state.languages.clone(),
-                false,
-                cx,
-            );
-            repl::init(app_state.fs.clone(), cx);
+            {
+                let prompt_builder = PromptBuilder::load(app_state.fs.clone(), false, cx);
+                cx.set_global(GlobalPromptBuilder(prompt_builder));
+            }
+            {
+                cx.set_global(GlobalIsEval(false));
+                agent::init(cx);
+            }
+            repl::init(cx);
             repl::notebook::init(cx);
             tasks_ui::init(cx);
             project::debugger::breakpoint_store::BreakpointStore::init(
@@ -4306,7 +4363,7 @@ mod tests {
             );
             project::debugger::dap_store::DapStore::init(&app_state.client.clone().into(), cx);
             debugger_ui::init(cx);
-            initialize_workspace(app_state.clone(), prompt_builder, cx);
+            initialize_workspace(cx);
             search::init(cx);
             app_state
         })

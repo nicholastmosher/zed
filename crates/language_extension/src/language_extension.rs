@@ -5,13 +5,15 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use extension::{ExtensionGrammarProxy, ExtensionHostProxy, ExtensionLanguageProxy};
-use language::{LanguageMatcher, LanguageName, LanguageRegistry, LoadedLanguage};
+use gpui::App;
+use language::{
+    GlobalLanguageRegistry, LanguageMatcher, LanguageName, LanguageRegistry, LoadedLanguage,
+};
 
-pub fn init(
-    extension_host_proxy: Arc<ExtensionHostProxy>,
-    language_registry: Arc<LanguageRegistry>,
-) {
+pub fn init(cx: &mut App) {
+    let language_registry = cx.global::<GlobalLanguageRegistry>().0.clone();
     let language_server_registry_proxy = LanguageServerRegistryProxy { language_registry };
+    let extension_host_proxy = ExtensionHostProxy::default_global(cx);
     extension_host_proxy.register_grammar_proxy(language_server_registry_proxy.clone());
     extension_host_proxy.register_language_proxy(language_server_registry_proxy.clone());
     extension_host_proxy.register_language_server_proxy(language_server_registry_proxy);

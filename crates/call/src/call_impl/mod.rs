@@ -4,7 +4,10 @@ pub mod room;
 use crate::call_settings::CallSettings;
 use anyhow::{Context as _, Result, anyhow};
 use audio::Audio;
-use client::{ChannelId, Client, TypedEnvelope, User, UserStore, ZED_ALWAYS_ACTIVE, proto};
+use client::{
+    ChannelId, Client, GlobalClient, GlobalUserStore, TypedEnvelope, User, UserStore,
+    ZED_ALWAYS_ACTIVE, proto,
+};
 use collections::HashSet;
 use futures::{Future, FutureExt, channel::oneshot, future::Shared};
 use gpui::{
@@ -25,10 +28,11 @@ struct GlobalActiveCall(Entity<ActiveCall>);
 
 impl Global for GlobalActiveCall {}
 
-pub fn init(client: Arc<Client>, user_store: Entity<UserStore>, cx: &mut App) {
+pub fn init(cx: &mut App) {
+    let user_store = cx.global::<GlobalUserStore>().0.clone();
     CallSettings::register(cx);
 
-    let active_call = cx.new(|cx| ActiveCall::new(client, user_store, cx));
+    let active_call = cx.new(|cx| ActiveCall::new(user_store, cx));
     cx.set_global(GlobalActiveCall(active_call));
 }
 
@@ -90,7 +94,8 @@ pub struct ActiveCall {
 impl EventEmitter<Event> for ActiveCall {}
 
 impl ActiveCall {
-    fn new(client: Arc<Client>, user_store: Entity<UserStore>, cx: &mut Context<Self>) -> Self {
+    fn new(user_store: Entity<UserStore>, cx: &mut Context<Self>) -> Self {
+        let client = cx.read_global::<GlobalClient, _>(|client, _| client.0.clone());
         Self {
             room: None,
             pending_room_creation: None,

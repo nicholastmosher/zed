@@ -271,7 +271,8 @@ mod tests {
     use futures::{FutureExt, future::BoxFuture};
     use gpui::TestAppContext;
     use indexing::IndexingEntrySet;
-    use language::language_settings::AllLanguageSettings;
+    use language::{GlobalLanguageRegistry, language_settings::AllLanguageSettings};
+    use node_runtime::GlobalNodeRuntime;
     use project::{Project, ProjectEntryId};
     use serde_json::json;
     use settings::SettingsStore;
@@ -384,7 +385,9 @@ mod tests {
         let project_index = cx.update(|cx| {
             let language_registry = project.read(cx).languages().clone();
             let node_runtime = project.read(cx).node_runtime().unwrap().clone();
-            languages::init(language_registry, node_runtime, cx);
+            cx.set_global(GlobalNodeRuntime(node_runtime));
+            cx.set_global(GlobalLanguageRegistry(language_registry));
+            languages::init(cx);
             semantic_index.create_project_index(project.clone(), cx)
         });
 

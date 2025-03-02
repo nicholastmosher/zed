@@ -20,7 +20,7 @@ pub use toast_layer::{RunAction, ToastAction, ToastLayer, ToastView};
 use anyhow::{Context as _, Result, anyhow};
 use call::{ActiveCall, call_settings::CallSettings};
 use client::{
-    ChannelId, Client, ErrorExt, Status, TypedEnvelope, UserStore,
+    ChannelId, Client, ErrorExt, GlobalClient, Status, TypedEnvelope, UserStore,
     proto::{self, ErrorCode, PanelId, PeerId},
 };
 use collections::{HashMap, HashSet, hash_map};
@@ -93,7 +93,7 @@ use std::{
     path::{Path, PathBuf},
     process::ExitStatus,
     rc::Rc,
-    sync::{Arc, LazyLock, Weak, atomic::AtomicUsize},
+    sync::{Arc, LazyLock, atomic::AtomicUsize},
     time::Duration,
 };
 use task::{DebugScenario, SpawnInTerminal, TaskContext};
@@ -408,7 +408,7 @@ fn prompt_and_open_paths(app_state: Arc<AppState>, options: PathPromptOptions, c
     .detach();
 }
 
-pub fn init(app_state: Arc<AppState>, cx: &mut App) {
+pub fn init(cx: &mut App) {
     init_settings(cx);
     component::init();
     theme_preview::init(cx);
@@ -418,38 +418,32 @@ pub fn init(app_state: Arc<AppState>, cx: &mut App) {
     cx.on_action(Workspace::close_global);
     cx.on_action(reload);
 
-    cx.on_action({
-        let app_state = Arc::downgrade(&app_state);
-        move |_: &Open, cx: &mut App| {
-            if let Some(app_state) = app_state.upgrade() {
-                prompt_and_open_paths(
-                    app_state,
-                    PathPromptOptions {
-                        files: true,
-                        directories: true,
-                        multiple: true,
-                    },
-                    cx,
-                );
-            }
-        }
+    cx.on_action(move |_: &Open, cx: &mut App| {
+        let app_state = cx.global::<GlobalAppState>().0.clone();
+
+        prompt_and_open_paths(
+            app_state,
+            PathPromptOptions {
+                files: true,
+                directories: true,
+                multiple: true,
+            },
+            cx,
+        );
     });
-    cx.on_action({
-        let app_state = Arc::downgrade(&app_state);
-        move |_: &OpenFiles, cx: &mut App| {
-            let directories = cx.can_select_mixed_files_and_dirs();
-            if let Some(app_state) = app_state.upgrade() {
-                prompt_and_open_paths(
-                    app_state,
-                    PathPromptOptions {
-                        files: true,
-                        directories,
-                        multiple: true,
-                    },
-                    cx,
-                );
-            }
-        }
+
+    cx.on_action(move |_: &OpenFiles, cx: &mut App| {
+        let app_state = cx.global::<GlobalAppState>().0.clone();
+        let directories = cx.can_select_mixed_files_and_dirs();
+        prompt_and_open_paths(
+            app_state,
+            PathPromptOptions {
+                files: true,
+                directories,
+                multiple: true,
+            },
+            cx,
+        );
     });
 }
 
@@ -711,7 +705,7 @@ pub struct AppState {
     pub session: Entity<AppSession>,
 }
 
-struct GlobalAppState(Weak<AppState>);
+pub struct GlobalAppState(pub Arc<AppState>);
 
 impl Global for GlobalAppState {}
 
@@ -739,6 +733,9 @@ impl From<&PeerId> for CollaboratorId {
     }
 }
 
+pub struct GlobalWorkspaceStore(pub Entity<WorkspaceStore>);
+impl Global for GlobalWorkspaceStore {}
+
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug)]
 struct Follower {
     project_id: Option<u64>,
@@ -747,19 +744,22 @@ struct Follower {
 
 impl AppState {
     #[track_caller]
-    pub fn global(cx: &App) -> Weak<Self> {
+    pub fn global(cx: &App) -> Arc<Self> {
         cx.global::<GlobalAppState>().0.clone()
     }
-    pub fn try_global(cx: &App) -> Option<Weak<Self>> {
+    pub fn try_global(cx: &App) -> Option<Arc<Self>> {
         cx.try_global::<GlobalAppState>()
             .map(|state| state.0.clone())
     }
-    pub fn set_global(state: Weak<AppState>, cx: &mut App) {
+    pub fn set_global(state: Arc<AppState>, cx: &mut App) {
         cx.set_global(GlobalAppState(state));
     }
 
     #[cfg(any(test, feature = "test-support"))]
     pub fn test(cx: &mut App) -> Arc<Self> {
+        use client::GlobalUserStore;
+        use fs::GlobalFs;
+        use language::GlobalLanguageRegistry;
         use node_runtime::NodeRuntime;
         use session::Session;
         use settings::SettingsStore;
@@ -770,16 +770,28 @@ impl AppState {
         }
 
         let fs = fs::FakeFs::new(cx.background_executor().clone());
-        let languages = Arc::new(LanguageRegistry::test(cx.background_executor().clone()));
+        cx.set_global(GlobalFs(fs.clone()));
+        let languages = {
+            let languages = Arc::new(LanguageRegistry::test(cx.background_executor().clone()));
+            cx.set_global(GlobalLanguageRegistry(languages.clone()));
+            languages
+        };
         let clock = Arc::new(clock::FakeSystemClock::new());
         let http_client = http_client::FakeHttpClient::with_404_response();
         let client = Client::new(clock, http_client.clone(), cx);
+        {
+            cx.set_global(GlobalClient(client.clone()));
+            client::init(cx);
+        }
+
         let session = cx.new(|cx| AppSession::new(Session::test(), cx));
-        let user_store = cx.new(|cx| UserStore::new(client.clone(), cx));
-        let workspace_store = cx.new(|cx| WorkspaceStore::new(client.clone(), cx));
+        let user_store = cx.new(|cx| UserStore::new(cx));
+        cx.set_global(GlobalUserStore(user_store.clone()));
+        let workspace_store = cx.new(|cx| WorkspaceStore::new(cx));
+        cx.set_global(GlobalWorkspaceStore(workspace_store.clone()));
 
         theme::init(theme::LoadThemes::JustBase, cx);
-        client::init(&client, cx);
+
         crate::init_settings(cx);
 
         Arc::new(Self {
@@ -5403,7 +5415,7 @@ impl Workspace {
         let client = project.read(cx).client();
         let user_store = project.read(cx).user_store();
 
-        let workspace_store = cx.new(|cx| WorkspaceStore::new(client.clone(), cx));
+        let workspace_store = cx.new(|cx| WorkspaceStore::new(cx));
         let session = cx.new(|cx| AppSession::new(Session::test(), cx));
         window.activate_window();
         let app_state = Arc::new(AppState {
@@ -6247,7 +6259,8 @@ fn resize_left_dock(
 }
 
 impl WorkspaceStore {
-    pub fn new(client: Arc<Client>, cx: &mut Context<Self>) -> Self {
+    pub fn new(cx: &mut Context<Self>) -> Self {
+        let client = cx.read_global::<GlobalClient, _>(|client, _| client.0.clone());
         Self {
             workspaces: Default::default(),
             _subscriptions: vec![

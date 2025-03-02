@@ -1,7 +1,7 @@
 use anyhow::Context as _;
 use gpui::{App, UpdateGlobal};
 use json::json_task_context;
-use node_runtime::NodeRuntime;
+use node_runtime::GlobalNodeRuntime;
 use python::PyprojectTomlManifestProvider;
 use rust::CargoManifestProvider;
 use rust_embed::RustEmbed;
@@ -48,7 +48,9 @@ pub static LANGUAGE_GIT_COMMIT: std::sync::LazyLock<Arc<Language>> =
         ))
     });
 
-pub fn init(languages: Arc<LanguageRegistry>, node: NodeRuntime, cx: &mut App) {
+pub fn init(cx: &mut App) {
+    let languages = cx.global::<GlobalLanguageRegistry>().0.clone();
+    let node = cx.global::<GlobalNodeRuntime>().0.clone();
     #[cfg(feature = "load-grammars")]
     languages.register_native_grammars([
         ("bash", tree_sitter_bash::LANGUAGE),

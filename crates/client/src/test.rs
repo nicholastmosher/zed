@@ -202,10 +202,10 @@ impl FakeServer {
 
     pub async fn build_user_store(
         &self,
-        client: Arc<Client>,
+        _client: Arc<Client>,
         cx: &mut TestAppContext,
     ) -> Entity<UserStore> {
-        let user_store = cx.new(|cx| UserStore::new(client, cx));
+        let user_store = cx.new(|cx| UserStore::new(cx));
         assert_eq!(
             self.receive::<proto::GetUsers>()
                 .await

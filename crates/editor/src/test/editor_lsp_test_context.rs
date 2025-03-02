@@ -104,7 +104,7 @@ impl EditorLspTestContext {
             assets::Assets.load_test_fonts(cx);
             language::init(cx);
             crate::init(cx);
-            workspace::init(app_state.clone(), cx);
+            workspace::init(cx);
             Project::init_settings(cx);
         });
 

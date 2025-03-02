@@ -78,6 +78,18 @@ impl From<PathEvent> for PathBuf {
     }
 }
 
+pub struct GlobalGitBinaryPath(pub Option<PathBuf>);
+impl Global for GlobalGitBinaryPath {}
+
+pub fn init(cx: &mut App) {
+    let git_binary_path = cx.global::<GlobalGitBinaryPath>().0.clone();
+    let fs = Arc::new(RealFs::new(
+        git_binary_path,
+        cx.background_executor().clone(),
+    ));
+    <dyn Fs>::set_global(fs.clone(), cx);
+}
+
 #[async_trait::async_trait]
 pub trait Fs: Send + Sync {
     async fn create_dir(&self, path: &Path) -> Result<()>;
@@ -143,8 +155,7 @@ pub trait Fs: Send + Sync {
     }
 }
 
-struct GlobalFs(Arc<dyn Fs>);
-
+pub struct GlobalFs(pub Arc<dyn Fs>);
 impl Global for GlobalFs {}
 
 impl dyn Fs {

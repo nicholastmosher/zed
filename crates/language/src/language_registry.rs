@@ -15,7 +15,7 @@ use futures::{
     channel::{mpsc, oneshot},
 };
 use globset::GlobSet;
-use gpui::{App, BackgroundExecutor, SharedString};
+use gpui::{App, BackgroundExecutor, Global, SharedString};
 use lsp::LanguageServerId;
 use parking_lot::{Mutex, RwLock};
 use postage::watch;
@@ -109,6 +109,9 @@ pub struct LanguageRegistry {
     executor: BackgroundExecutor,
     lsp_binary_status_tx: BinaryStatusSender,
 }
+
+pub struct GlobalLanguageRegistry(pub Arc<LanguageRegistry>);
+impl Global for GlobalLanguageRegistry {}
 
 struct LanguageRegistryState {
     next_language_server_id: usize,

@@ -244,7 +244,7 @@ impl Render for GradientViewer {
 }
 
 fn main() {
-    Application::new().run(|cx: &mut App| {
+    Application::new().add_plugins(|cx: &mut App| {
         cx.open_window(
             WindowOptions {
                 focus: true,
@@ -254,5 +254,6 @@ fn main() {
         )
         .unwrap();
         cx.activate(true);
-    });
+    })
+    .run();
 }

@@ -27,7 +27,8 @@ use util::ResultExt;
 
 actions!(supermaven, [SignOut]);
 
-pub fn init(client: Arc<Client>, cx: &mut App) {
+pub fn init(cx: &mut App) {
+    let client = Client::global(cx);
     let supermaven = cx.new(|_| Supermaven::Starting);
     Supermaven::set_global(supermaven.clone(), cx);
 

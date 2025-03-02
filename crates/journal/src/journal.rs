@@ -9,9 +9,8 @@ use settings::{Settings, SettingsSources};
 use std::{
     fs::OpenOptions,
     path::{Path, PathBuf},
-    sync::Arc,
 };
-use workspace::{AppState, OpenVisible, Workspace};
+use workspace::{OpenVisible, Workspace};
 
 actions!(journal, [NewJournalEntry]);
 
@@ -57,7 +56,7 @@ impl settings::Settings for JournalSettings {
     fn import_from_vscode(_vscode: &settings::VsCodeSettings, _current: &mut Self::FileContent) {}
 }
 
-pub fn init(_: Arc<AppState>, cx: &mut App) {
+pub fn init(cx: &mut App) {
     JournalSettings::register(cx);
 
     cx.observe_new(

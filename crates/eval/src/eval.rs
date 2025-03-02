@@ -6,15 +6,17 @@ mod ids;
 mod instance;
 mod tool_metrics;
 
+use agent::GlobalIsEval;
 use assertions::{AssertionsReport, display_error_row};
+use fs::GlobalFs;
 use instance::{ExampleInstance, JudgeOutput, RunOutput, run_git};
 pub(crate) use tool_metrics::*;
 
 use ::fs::RealFs;
 use clap::Parser;
-use client::{Client, ProxySettings, UserStore};
+use client::{Client, GlobalUserStore, ProxySettings, UserStore};
 use collections::{HashMap, HashSet};
-use extension::ExtensionHostProxy;
+use extension::{ExtensionHostProxy, GlobalExtensionHostProxy};
 use futures::future;
 use gpui::http_client::read_proxy_from_env;
 use gpui::{App, AppContext, Application, AsyncApp, Entity, SemanticVersion, UpdateGlobal};
@@ -26,6 +28,7 @@ use project::Project;
 use project::project_settings::ProjectSettings;
 use prompt_store::PromptBuilder;
 use release_channel::AppVersion;
+use release_channel::ReleaseChannelPlugin;
 use reqwest_client::ReqwestClient;
 use settings::{Settings, SettingsStore};
 use std::cell::RefCell;
@@ -105,7 +108,7 @@ fn main() {
     let app = Application::headless().with_http_client(http_client.clone());
     let all_threads = examples::all(&examples_dir);
 
-    app.run(move |cx| {
+    app.add_plugins(|cx: &mut App| {
         let app_state = init(cx);
 
         let telemetry = app_state.client.telemetry();
@@ -320,7 +323,8 @@ fn main() {
             cx.update(|cx| cx.quit())
         })
         .detach_and_log_err(cx);
-    });
+    })
+    .run();
 }
 
 /// Subset of `workspace::AppState` needed by `HeadlessAssistant`, with additional fields.
@@ -336,8 +340,10 @@ pub struct AgentAppState {
 }
 
 pub fn init(cx: &mut App) -> Arc<AgentAppState> {
-    release_channel::init(SemanticVersion::default(), cx);
-    gpui_tokio::init(cx);
+    // release_channel::init(SemanticVersion::default(), cx);
+    cx.add_plugins(ReleaseChannelPlugin::new(SemanticVersion::default(), None));
+    // gpui_tokio::init(cx);
+    cx.add_plugins(gpui_tokio::init);
 
     let mut settings_store = SettingsStore::new(cx);
     settings_store
@@ -369,19 +375,22 @@ pub fn init(cx: &mut App) -> Arc<AgentAppState> {
     Project::init_settings(cx);
 
     let client = Client::production(cx);
-    cx.set_http_client(client.http_client());
+    Client::set_global(client.clone(), cx);
+    cx.set_http_client(client.http_client().clone());
 
     let git_binary_path = None;
     let fs = Arc::new(RealFs::new(
         git_binary_path,
         cx.background_executor().clone(),
     ));
+    cx.set_global(GlobalFs(fs.clone()));
 
     let mut languages = LanguageRegistry::new(cx.background_executor().clone());
     languages.set_language_server_download_dir(paths::languages_dir().clone());
     let languages = Arc::new(languages);
 
-    let user_store = cx.new(|cx| UserStore::new(client.clone(), cx));
+    let user_store = cx.new(|cx| UserStore::new(cx));
+    cx.set_global(GlobalUserStore(user_store.clone()));
 
     extension::init(cx);
 
@@ -414,24 +423,23 @@ pub fn init(cx: &mut App) -> Arc<AgentAppState> {
     let extension_host_proxy = ExtensionHostProxy::global(cx);
 
     language::init(cx);
-    debug_adapter_extension::init(extension_host_proxy.clone(), cx);
-    language_extension::init(extension_host_proxy.clone(), languages.clone());
-    language_model::init(client.clone(), cx);
-    language_models::init(user_store.clone(), client.clone(), fs.clone(), cx);
-    languages::init(languages.clone(), node_runtime.clone(), cx);
+    {
+        cx.set_global(GlobalExtensionHostProxy(extension_host_proxy.clone()));
+        debug_adapter_extension::init(cx);
+    }
+    language_extension::init(cx);
+    language_model::init(cx);
+    language_models::init(cx);
+    languages::init(cx);
     prompt_store::init(cx);
     terminal_view::init(cx);
     let stdout_is_a_pty = false;
     let prompt_builder = PromptBuilder::load(fs.clone(), stdout_is_a_pty, cx);
-    agent::init(
-        fs.clone(),
-        client.clone(),
-        prompt_builder.clone(),
-        languages.clone(),
-        true,
-        cx,
-    );
-    assistant_tools::init(client.http_client(), cx);
+    {
+        cx.set_global(GlobalIsEval(true));
+        agent::init(cx);
+    }
+    assistant_tools::init(cx);
 
     SettingsStore::update_global(cx, |store, cx| {
         store.set_user_settings(include_str!("../runner_settings.json"), cx)

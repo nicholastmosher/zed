@@ -8,7 +8,7 @@ use settings::SettingsStore;
 use std::path::{Path, PathBuf};
 use util::{path, separator};
 use workspace::{
-    AppState, Pane,
+    AppState, GlobalAppState, Pane,
     item::{Item, ProjectItem},
     register_project_item,
 };
@@ -5155,12 +5155,13 @@ fn init_test(cx: &mut TestAppContext) {
 fn init_test_with_editor(cx: &mut TestAppContext) {
     cx.update(|cx| {
         let app_state = AppState::test(cx);
+        cx.set_global(GlobalAppState(app_state));
         theme::init(theme::LoadThemes::JustBase, cx);
         init_settings(cx);
         language::init(cx);
         editor::init(cx);
         crate::init(cx);
-        workspace::init(app_state.clone(), cx);
+        workspace::init(cx);
         Project::init_settings(cx);
 
         cx.update_global::<SettingsStore, _>(|store, cx| {

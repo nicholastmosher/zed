@@ -39,6 +39,7 @@ use project::{
     debugger::breakpoint_store::{BreakpointState, SourceBreakpoint},
     project_settings::{LspSettings, ProjectSettings},
 };
+use release_channel::ReleaseChannelPlugin;
 use serde_json::{self, json};
 use std::{cell::RefCell, future::Future, rc::Rc, sync::atomic::AtomicBool, time::Instant};
 use std::{
@@ -21118,7 +21119,8 @@ pub(crate) fn init_test(cx: &mut TestAppContext, f: fn(&mut AllLanguageSettingsC
         let store = SettingsStore::test(cx);
         cx.set_global(store);
         theme::init(theme::LoadThemes::JustBase, cx);
-        release_channel::init(SemanticVersion::default(), cx);
+        // was -> release_channel::init(SemanticVersion::default(), cx);
+        ReleaseChannelPlugin::new(SemanticVersion::default(), None).build(cx);
         client::init_settings(cx);
         language::init(cx);
         Project::init_settings(cx);

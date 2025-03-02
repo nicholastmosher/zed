@@ -2,6 +2,7 @@ use std::ops::{Deref, DerefMut};
 
 use editor::test::editor_lsp_test_context::EditorLspTestContext;
 use gpui::{Context, Entity, SemanticVersion, UpdateGlobal};
+use release_channel::ReleaseChannelPlugin;
 use search::{BufferSearchBar, project_search::ProjectSearchBar};
 
 use crate::{state::Operator, *};
@@ -18,7 +19,8 @@ impl VimTestContext {
         cx.update(|cx| {
             let settings = SettingsStore::test(cx);
             cx.set_global(settings);
-            release_channel::init(SemanticVersion::default(), cx);
+            // release_channel::init(SemanticVersion::default(), cx);
+            cx.add_plugins(ReleaseChannelPlugin::new(SemanticVersion::default(), None));
             command_palette::init(cx);
             project_panel::init(cx);
             git_ui::init(cx);

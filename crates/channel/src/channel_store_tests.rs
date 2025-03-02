@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::channel_chat::ChannelChatEvent;
 
 use super::*;
@@ -5,6 +7,7 @@ use client::{Client, UserStore, test::FakeServer};
 use clock::FakeSystemClock;
 use gpui::{App, AppContext as _, Entity, SemanticVersion, TestAppContext};
 use http_client::FakeHttpClient;
+use release_channel::ReleaseChannelPlugin;
 use rpc::proto::{self};
 use settings::SettingsStore;
 
@@ -346,16 +349,19 @@ async fn test_channel_messages(cx: &mut TestAppContext) {
 fn init_test(cx: &mut App) -> Entity<ChannelStore> {
     let settings_store = SettingsStore::test(cx);
     cx.set_global(settings_store);
-    release_channel::init(SemanticVersion::default(), cx);
+    // release_channel::init(SemanticVersion::default(), cx);
+    cx.add_plugins(ReleaseChannelPlugin::new(SemanticVersion::default(), None));
     client::init_settings(cx);
 
     let clock = Arc::new(FakeSystemClock::new());
     let http = FakeHttpClient::with_404_response();
     let client = Client::new(clock, http.clone(), cx);
-    let user_store = cx.new(|cx| UserStore::new(client.clone(), cx));
+    cx.set_global(GlobalClient(client));
+    let user_store = cx.new(|cx| UserStore::new(cx));
+    cx.set_global(GlobalUserStore(user_store));
 
-    client::init(&client, cx);
-    crate::init(&client, user_store, cx);
+    client::init(cx);
+    crate::init(cx);
 
     ChannelStore::global(cx)
 }

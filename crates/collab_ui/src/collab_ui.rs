@@ -5,7 +5,7 @@ pub mod notification_panel;
 pub mod notifications;
 mod panel_settings;
 
-use std::{rc::Rc, sync::Arc};
+use std::rc::Rc;
 
 pub use collab_panel::CollabPanel;
 use gpui::{
@@ -19,9 +19,8 @@ pub use panel_settings::{
 use release_channel::ReleaseChannel;
 use settings::Settings;
 use ui::px;
-use workspace::AppState;
 
-pub fn init(app_state: &Arc<AppState>, cx: &mut App) {
+pub fn init(cx: &mut App) {
     CollaborationPanelSettings::register(cx);
     ChatPanelSettings::register(cx);
     NotificationPanelSettings::register(cx);
@@ -31,7 +30,7 @@ pub fn init(app_state: &Arc<AppState>, cx: &mut App) {
     chat_panel::init(cx);
     collab_panel::init(cx);
     notification_panel::init(cx);
-    notifications::init(app_state, cx);
+    notifications::init(cx);
     title_bar::init(cx);
 }
 

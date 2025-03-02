@@ -4,13 +4,12 @@ use call::{ActiveCall, IncomingCall};
 use futures::StreamExt;
 use gpui::{App, WindowHandle, prelude::*};
 
-use std::sync::{Arc, Weak};
+use std::sync::Arc;
 use ui::{Button, Label, prelude::*};
 use util::ResultExt;
-use workspace::AppState;
+use workspace::GlobalAppState;
 
-pub fn init(app_state: &Arc<AppState>, cx: &mut App) {
-    let app_state = Arc::downgrade(app_state);
+pub fn init(cx: &mut App) {
     let mut incoming_call = ActiveCall::global(cx).read(cx).incoming();
     cx.spawn(async move |cx| {
         let mut notification_windows: Vec<WindowHandle<IncomingCallNotification>> = Vec::new();
@@ -23,30 +22,27 @@ pub fn init(app_state: &Arc<AppState>, cx: &mut App) {
                     .log_err();
             }
 
-            if let Some(incoming_call) = incoming_call {
-                let unique_screens = cx.update(|cx| cx.displays()).unwrap();
-                let window_size = gpui::Size {
-                    width: px(400.),
-                    height: px(72.),
-                };
+            let Some(incoming_call) = incoming_call else {
+                return;
+            };
 
-                for screen in unique_screens {
-                    if let Some(options) = cx
-                        .update(|cx| notification_window_options(screen, window_size, cx))
-                        .log_err()
-                    {
-                        let window = cx
-                            .open_window(options, |_, cx| {
-                                cx.new(|_| {
-                                    IncomingCallNotification::new(
-                                        incoming_call.clone(),
-                                        app_state.clone(),
-                                    )
-                                })
-                            })
-                            .unwrap();
-                        notification_windows.push(window);
-                    }
+            let unique_screens = cx.update(|cx| cx.displays()).unwrap();
+            let window_size = gpui::Size {
+                width: px(400.),
+                height: px(72.),
+            };
+
+            for screen in unique_screens {
+                if let Some(options) = cx
+                    .update(|cx| notification_window_options(screen, window_size, cx))
+                    .log_err()
+                {
+                    let window = cx
+                        .open_window(options, |_, cx| {
+                            cx.new(|_| IncomingCallNotification::new(incoming_call.clone()))
+                        })
+                        .unwrap();
+                    notification_windows.push(window);
                 }
             }
         }
@@ -56,15 +52,14 @@ pub fn init(app_state: &Arc<AppState>, cx: &mut App) {
 
 struct IncomingCallNotificationState {
     call: IncomingCall,
-    app_state: Weak<AppState>,
 }
 
 pub struct IncomingCallNotification {
     state: Arc<IncomingCallNotificationState>,
 }
 impl IncomingCallNotificationState {
-    pub fn new(call: IncomingCall, app_state: Weak<AppState>) -> Self {
-        Self { call, app_state }
+    pub fn new(call: IncomingCall) -> Self {
+        Self { call }
     }
 
     fn respond(&self, accept: bool, cx: &mut App) {
@@ -73,24 +68,20 @@ impl IncomingCallNotificationState {
             let join = active_call.update(cx, |active_call, cx| active_call.accept_incoming(cx));
             let caller_user_id = self.call.calling_user.id;
             let initial_project_id = self.call.initial_project.as_ref().map(|project| project.id);
-            let app_state = self.app_state.clone();
             let cx: &mut App = cx;
             cx.spawn(async move |cx| {
                 join.await?;
-                if let Some(project_id) = initial_project_id {
-                    cx.update(|cx| {
-                        if let Some(app_state) = app_state.upgrade() {
-                            workspace::join_in_room_project(
-                                project_id,
-                                caller_user_id,
-                                app_state,
-                                cx,
-                            )
-                            .detach_and_log_err(cx);
-                        }
-                    })
-                    .log_err();
-                }
+                let Some(project_id) = initial_project_id else {
+                    return anyhow::Ok(());
+                };
+
+                cx.update(|cx| {
+                    let app_state = cx.global::<GlobalAppState>().0.clone();
+                    workspace::join_in_room_project(project_id, caller_user_id, app_state, cx)
+                        .detach_and_log_err(cx);
+                })
+                .log_err();
+
                 anyhow::Ok(())
             })
             .detach_and_log_err(cx);
@@ -103,9 +94,9 @@ impl IncomingCallNotificationState {
 }
 
 impl IncomingCallNotification {
-    pub fn new(call: IncomingCall, app_state: Weak<AppState>) -> Self {
+    pub fn new(call: IncomingCall) -> Self {
         Self {
-            state: Arc::new(IncomingCallNotificationState::new(call, app_state)),
+            state: Arc::new(IncomingCallNotificationState::new(call)),
         }
     }
 }

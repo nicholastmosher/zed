@@ -21,12 +21,14 @@ mod styles;
 
 use std::path::Path;
 use std::sync::Arc;
+use std::sync::Mutex;
 
 use ::settings::Settings;
 use ::settings::SettingsStore;
 use anyhow::Result;
 use fallback_themes::apply_status_color_defaults;
 use fs::Fs;
+use gpui::Plugin;
 use gpui::{
     App, AssetSource, HighlightStyle, Hsla, Pixels, Refineable, SharedString, WindowAppearance,
     WindowBackgroundAppearance, px,
@@ -86,6 +88,25 @@ pub enum LoadThemes {
 
     /// Load all of the built-in themes.
     All(Box<dyn AssetSource>),
+}
+
+/// Plugin for loading themes
+pub struct ThemePlugin {
+    load_themes: Mutex<Option<LoadThemes>>,
+}
+impl ThemePlugin {
+    /// Initialize the theme system.
+    pub fn new(load_themes: LoadThemes) -> Self {
+        Self {
+            load_themes: Mutex::new(Some(load_themes)),
+        }
+    }
+}
+impl Plugin for ThemePlugin {
+    fn build(&self, cx: &mut App) {
+        let themes_to_load = self.load_themes.lock().unwrap().take().unwrap();
+        init(themes_to_load, cx);
+    }
 }
 
 /// Initialize the theme system.

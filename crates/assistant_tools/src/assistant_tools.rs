@@ -19,12 +19,10 @@ mod thinking_tool;
 mod ui;
 mod web_search_tool;
 
-use std::sync::Arc;
-
 use assistant_tool::ToolRegistry;
+use client::Client;
 use copy_path_tool::CopyPathTool;
 use gpui::{App, Entity};
-use http_client::HttpClientWithUrl;
 use language_model::LanguageModelRegistry;
 use move_path_tool::MovePathTool;
 use web_search_tool::WebSearchTool;
@@ -48,7 +46,8 @@ pub use open_tool::OpenTool;
 pub use read_file_tool::{ReadFileTool, ReadFileToolInput};
 pub use terminal_tool::TerminalTool;
 
-pub fn init(http_client: Arc<HttpClientWithUrl>, cx: &mut App) {
+pub fn init(cx: &mut App) {
+    let http_client = Client::global(cx).http_client();
     assistant_tool::init(cx);
 
     let registry = ToolRegistry::global(cx);
@@ -95,6 +94,8 @@ fn register_web_search_tool(registry: &Entity<LanguageModelRegistry>, cx: &mut A
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
+
     use super::*;
     use agent_settings::AgentSettings;
     use client::Client;
@@ -140,8 +141,9 @@ mod tests {
             FakeHttpClient::with_200_response(),
             cx,
         );
-        language_model::init(client.clone(), cx);
-        crate::init(client.http_client(), cx);
+        Client::set_global(client, cx);
+        language_model::init(cx);
+        crate::init(cx);
 
         for tool in ToolRegistry::global(cx).tools() {
             let actual_schema = tool

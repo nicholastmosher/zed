@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use futures::StreamExt;
 use gpui::{
-    AppContext as _, AsyncApp, Bounds, Context, Entity, InteractiveElement, KeyBinding, Menu,
+    App, AppContext as _, AsyncApp, Bounds, Context, Entity, InteractiveElement, KeyBinding, Menu,
     MenuItem, ParentElement, Pixels, Render, ScreenCaptureStream, SharedString,
     StatefulInteractiveElement as _, Styled, Task, Window, WindowBounds, WindowHandle,
     WindowOptions, actions, bounds, div, point,
@@ -23,14 +23,14 @@ actions!(livekit_client, [Quit]);
 fn main() {
     SimpleLogger::init(LevelFilter::Info, Default::default()).expect("could not initialize logger");
 
-    gpui::Application::new().run(|cx| {
+    gpui::Application::new().add_plugins(|cx: &mut App| {
         #[cfg(any(test, feature = "test-support"))]
         println!("USING TEST LIVEKIT");
 
         #[cfg(not(any(test, feature = "test-support")))]
         println!("USING REAL LIVEKIT");
 
-        gpui_tokio::init(cx);
+        cx.add_plugins(gpui_tokio::init);
 
         cx.activate(true);
         cx.on_action(quit);

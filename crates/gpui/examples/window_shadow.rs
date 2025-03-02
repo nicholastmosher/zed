@@ -203,7 +203,7 @@ fn resize_edge(pos: Point<Pixels>, shadow_size: Pixels, size: Size<Pixels>) -> O
 }
 
 fn main() {
-    Application::new().run(|cx: &mut App| {
+    Application::new().add_plugins(|cx: &mut App| {
         let bounds = Bounds::centered(None, size(px(600.0), px(600.0)), cx);
         cx.open_window(
             WindowOptions {
@@ -223,5 +223,6 @@ fn main() {
             },
         )
         .unwrap();
-    });
+    })
+    .run();
 }

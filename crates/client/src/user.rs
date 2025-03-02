@@ -1,3 +1,5 @@
+use crate::GlobalClient;
+
 use super::{Client, Status, TypedEnvelope, proto};
 use anyhow::{Context as _, Result, anyhow};
 use chrono::{DateTime, Utc};
@@ -5,7 +7,8 @@ use collections::{HashMap, HashSet, hash_map::Entry};
 use feature_flags::FeatureFlagAppExt;
 use futures::{Future, StreamExt, channel::mpsc};
 use gpui::{
-    App, AsyncApp, Context, Entity, EventEmitter, SharedString, SharedUri, Task, WeakEntity,
+    App, AppContext, AsyncApp, Context, Entity, EventEmitter, Global, SharedString, SharedUri,
+    Task, WeakEntity,
 };
 use postage::{sink::Sink, watch};
 use rpc::proto::{RequestMessage, UsersResponse};
@@ -123,6 +126,9 @@ pub struct UserStore {
     weak_self: WeakEntity<Self>,
 }
 
+pub struct GlobalUserStore(pub Entity<UserStore>);
+impl Global for GlobalUserStore {}
+
 #[derive(Clone)]
 pub struct InviteInfo {
     pub count: u32,
@@ -155,7 +161,8 @@ enum UpdateContacts {
 }
 
 impl UserStore {
-    pub fn new(client: Arc<Client>, cx: &Context<Self>) -> Self {
+    pub fn new(cx: &Context<Self>) -> Self {
+        let client = cx.read_global::<GlobalClient, _>(|client, _cx| client.0.clone());
         let (mut current_user_tx, current_user_rx) = watch::channel();
         let (update_contacts_tx, mut update_contacts_rx) = mpsc::unbounded();
         let rpc_subscriptions = vec![

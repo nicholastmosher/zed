@@ -66,7 +66,7 @@ fn build_window_options(display_id: DisplayId, bounds: Bounds<Pixels>) -> Window
 }
 
 fn main() {
-    Application::new().run(|cx: &mut App| {
+    Application::new().add_plugins(|cx: &mut App| {
         // Create several new windows, positioned in the top right corner of each screen
         let size = Size {
             width: px(350.),
@@ -213,5 +213,6 @@ fn main() {
             })
             .unwrap();
         }
-    });
+    })
+    .run();
 }

@@ -1,11 +1,13 @@
 use assets::Assets;
 use gpui::{Application, Entity, KeyBinding, Length, StyleRefinement, WindowOptions, rgb};
+use language::GlobalLanguageRegistry;
 use language::{LanguageRegistry, language_settings::AllLanguageSettings};
 use markdown::{Markdown, MarkdownElement, MarkdownStyle};
+use node_runtime::GlobalNodeRuntime;
 use node_runtime::NodeRuntime;
 use settings::SettingsStore;
 use std::sync::Arc;
-use theme::LoadThemes;
+use theme::{LoadThemes, ThemePlugin};
 use ui::div;
 use ui::prelude::*;
 
@@ -19,30 +21,38 @@ wow so cool
 pub fn main() {
     env_logger::init();
 
-    Application::new().with_assets(Assets).run(|cx| {
-        let store = SettingsStore::test(cx);
-        cx.set_global(store);
-        language::init(cx);
-        SettingsStore::update(cx, |store, cx| {
-            store.update_user_settings::<AllLanguageSettings>(cx, |_| {});
-        });
-        cx.bind_keys([KeyBinding::new("cmd-c", markdown::Copy, None)]);
+    Application::new()
+        .with_assets(Assets)
+        .add_plugins(|cx: &mut App| {
+            let store = SettingsStore::test(cx);
+            cx.set_global(store);
+            language::init(cx);
+            SettingsStore::update(cx, |store, cx| {
+                store.update_user_settings::<AllLanguageSettings>(cx, |_| {});
+            });
+            cx.bind_keys([KeyBinding::new("cmd-c", markdown::Copy, None)]);
 
-        let node_runtime = NodeRuntime::unavailable();
-        let language_registry = Arc::new(LanguageRegistry::new(cx.background_executor().clone()));
-        languages::init(language_registry.clone(), node_runtime, cx);
-        theme::init(LoadThemes::JustBase, cx);
-        Assets.load_fonts(cx).unwrap();
+            let node_runtime = NodeRuntime::unavailable();
+            cx.set_global(GlobalNodeRuntime(node_runtime));
+            let language_registry =
+                Arc::new(LanguageRegistry::new(cx.background_executor().clone()));
+            cx.set_global(GlobalLanguageRegistry(language_registry));
+            languages::init(cx);
+            // theme::init(LoadThemes::JustBase, cx);
+            cx.add_plugins(ThemePlugin::new(LoadThemes::JustBase));
+            Assets.load_fonts(cx).unwrap();
 
-        cx.activate(true);
-        let _ = cx.open_window(WindowOptions::default(), |_, cx| {
-            cx.new(|cx| {
-                let markdown = cx.new(|cx| Markdown::new(MARKDOWN_EXAMPLE.into(), None, None, cx));
+            cx.activate(true);
+            let _ = cx.open_window(WindowOptions::default(), |_, cx| {
+                cx.new(|cx| {
+                    let markdown =
+                        cx.new(|cx| Markdown::new(MARKDOWN_EXAMPLE.into(), None, None, cx));
 
-                HelloWorld { markdown }
-            })
-        });
-    });
+                    HelloWorld { markdown }
+                })
+            });
+        })
+        .run();
 }
 struct HelloWorld {
     markdown: Entity<Markdown>,

@@ -1,14 +1,14 @@
-use crate::stdout_is_a_pty;
+use crate::{SystemInfo, stdout_is_a_pty};
 use anyhow::{Context as _, Result};
 use backtrace::{self, Backtrace};
 use chrono::Utc;
-use client::{TelemetrySettings, telemetry};
+use client::{GlobalClient, TelemetrySettings, telemetry};
 use db::kvp::KEY_VALUE_STORE;
-use gpui::{App, AppContext as _, SemanticVersion};
+use gpui::{App, AppContext as _};
 use http_client::{self, HttpClient, HttpClientWithUrl, HttpRequestExt, Method};
 use paths::{crashes_dir, crashes_retired_dir};
 use project::Project;
-use release_channel::{AppCommitSha, RELEASE_CHANNEL, ReleaseChannel};
+use release_channel::{RELEASE_CHANNEL, ReleaseChannel};
 use settings::Settings;
 use smol::stream::StreamExt;
 use std::{
@@ -23,13 +23,16 @@ use util::ResultExt;
 
 static PANIC_COUNT: AtomicU32 = AtomicU32::new(0);
 
-pub fn init_panic_hook(
-    app_version: SemanticVersion,
-    app_commit_sha: Option<AppCommitSha>,
-    system_id: Option<String>,
-    installation_id: Option<String>,
-    session_id: String,
-) {
+pub fn init_panic_hook(cx: &mut App) {
+    let SystemInfo {
+        app_version,
+        app_commit_sha,
+        system_id,
+        installation_id,
+        session_id,
+        ..
+    } = cx.global::<SystemInfo>().clone();
+
     let is_pty = stdout_is_a_pty();
 
     panic::set_hook(Box::new(move |info| {
@@ -122,8 +125,8 @@ pub fn init_panic_hook(
             architecture: env::consts::ARCH.into(),
             panicked_on: Utc::now().timestamp_millis(),
             backtrace: symbols,
-            system_id: system_id.clone(),
-            installation_id: installation_id.clone(),
+            system_id: system_id.as_ref().map(|it| it.to_string()).clone(),
+            installation_id: installation_id.as_ref().map(|it| it.to_string()).clone(),
             session_id: session_id.clone(),
         };
 
@@ -171,13 +174,13 @@ fn get_main_module_base_address() -> *mut c_void {
     std::ptr::null_mut()
 }
 
-pub fn init(
-    http_client: Arc<HttpClientWithUrl>,
-    system_id: Option<String>,
-    installation_id: Option<String>,
-    session_id: String,
-    cx: &mut App,
-) {
+pub fn init(cx: &mut App) {
+    let http_client = cx.global::<GlobalClient>().0.http_client();
+    let system_info = cx.global::<SystemInfo>();
+    let system_id = system_info.system_id.clone().map(|id| id.to_string());
+    let installation_id = system_info.installation_id.clone().map(|id| id.to_string());
+    let session_id = system_info.session_id.clone();
+
     #[cfg(target_os = "macos")]
     monitor_main_thread_hangs(http_client.clone(), installation_id.clone(), cx);
 

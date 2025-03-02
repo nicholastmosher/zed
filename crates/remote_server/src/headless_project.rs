@@ -1,13 +1,14 @@
 use ::proto::{FromProto, ToProto};
 use anyhow::{Context as _, Result, anyhow};
-
-use extension::ExtensionHostProxy;
+use extension::{ExtensionHostProxy, GlobalExtensionHostProxy};
 use extension_host::headless_host::HeadlessExtensionStore;
 use fs::Fs;
 use gpui::{App, AppContext as _, AsyncApp, Context, Entity, PromptLevel};
 use http_client::HttpClient;
-use language::{Buffer, BufferEvent, LanguageRegistry, proto::serialize_operation};
-use node_runtime::NodeRuntime;
+use language::{
+    Buffer, BufferEvent, GlobalLanguageRegistry, LanguageRegistry, proto::serialize_operation,
+};
+use node_runtime::{GlobalNodeRuntime, NodeRuntime};
 use project::{
     LspStore, LspStoreEvent, PrettierStore, ProjectEnvironment, ProjectPath, ToolchainStore,
     WorktreeId,
@@ -60,7 +61,8 @@ pub struct HeadlessAppState {
 
 impl HeadlessProject {
     pub fn init(cx: &mut App) {
-        settings::init(cx);
+        // settings::init(cx);
+        cx.add_plugins(settings::init);
         language::init(cx);
         project::Project::init_settings(cx);
     }
@@ -76,9 +78,13 @@ impl HeadlessProject {
         }: HeadlessAppState,
         cx: &mut Context<Self>,
     ) -> Self {
-        debug_adapter_extension::init(proxy.clone(), cx);
-        language_extension::init(proxy.clone(), languages.clone());
-        languages::init(languages.clone(), node_runtime.clone(), cx);
+        cx.set_global(GlobalLanguageRegistry(languages.clone()));
+        cx.set_global(GlobalExtensionHostProxy(proxy.clone()));
+        debug_adapter_extension::init(cx);
+        language_extension::init(cx);
+
+        cx.set_global(GlobalNodeRuntime(node_runtime));
+        languages::init(cx);
 
         let worktree_store = cx.new(|cx| {
             let mut store = WorktreeStore::local(true, fs.clone());
@@ -106,10 +112,11 @@ impl HeadlessProject {
         let breakpoint_store =
             cx.new(|_| BreakpointStore::local(worktree_store.clone(), buffer_store.clone()));
 
+        let node_runtime = cx.global::<GlobalNodeRuntime>().0.clone();
         let dap_store = cx.new(|cx| {
             let mut dap_store = DapStore::new_local(
                 http_client.clone(),
-                node_runtime.clone(),
+                node_runtime,
                 fs.clone(),
                 environment.clone(),
                 toolchain_store.read(cx).as_language_toolchain_store(),
@@ -134,8 +141,9 @@ impl HeadlessProject {
         });
 
         let prettier_store = cx.new(|cx| {
+            let node_runtime = cx.global::<GlobalNodeRuntime>().0.clone();
             PrettierStore::new(
-                node_runtime.clone(),
+                node_runtime,
                 fs.clone(),
                 languages.clone(),
                 worktree_store.clone(),
@@ -194,6 +202,7 @@ impl HeadlessProject {
         )
         .detach();
 
+        let node_runtime = cx.global::<GlobalNodeRuntime>().0.clone();
         let extensions = HeadlessExtensionStore::new(
             fs.clone(),
             http_client.clone(),

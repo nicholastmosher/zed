@@ -35,7 +35,7 @@ impl Render for ExampleWindow {
 }
 
 fn main() {
-    Application::new().run(|cx: &mut App| {
+    Application::new().add_plugins(|cx: &mut App| {
         let mut bounds = Bounds::centered(None, size(px(500.), px(500.0)), cx);
 
         cx.bind_keys([KeyBinding::new("cmd-w", CloseWindow, None)]);
@@ -78,5 +78,6 @@ fn main() {
             },
         )
         .unwrap();
-    });
+    })
+    .run();
 }

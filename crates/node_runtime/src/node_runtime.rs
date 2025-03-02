@@ -2,6 +2,7 @@ use anyhow::{Context as _, Result, anyhow, bail};
 use async_compression::futures::bufread::GzipDecoder;
 use async_tar::Archive;
 use futures::{AsyncReadExt, FutureExt as _, channel::oneshot, future::Shared};
+use gpui::Global;
 use http_client::{HttpClient, Url};
 use semver::Version;
 use serde::Deserialize;
@@ -29,6 +30,14 @@ pub struct NodeBinaryOptions {
 
 #[derive(Clone)]
 pub struct NodeRuntime(Arc<Mutex<NodeRuntimeState>>);
+
+pub struct GlobalNodeRuntime(pub NodeRuntime);
+impl gpui::Global for GlobalNodeRuntime {}
+
+pub struct GlobalNodeOptionsTx(pub async_watch::Sender<Option<NodeBinaryOptions>>);
+impl Global for GlobalNodeOptionsTx {}
+pub struct GlobalNodeOptionsRx(pub async_watch::Receiver<Option<NodeBinaryOptions>>);
+impl Global for GlobalNodeOptionsRx {}
 
 struct NodeRuntimeState {
     http: Arc<dyn HttpClient>,

@@ -38,7 +38,8 @@ pub use crate::telemetry::*;
 
 pub const ZED_CLOUD_PROVIDER_ID: &str = "zed.dev";
 
-pub fn init(client: Arc<Client>, cx: &mut App) {
+pub fn init(cx: &mut App) {
+    let client = Client::global(cx);
     init_settings(cx);
     RefreshLlmTokenListener::register(client.clone(), cx);
 }

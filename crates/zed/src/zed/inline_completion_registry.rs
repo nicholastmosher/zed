@@ -10,10 +10,12 @@ use std::{cell::RefCell, rc::Rc, sync::Arc};
 use supermaven::{Supermaven, SupermavenCompletionProvider};
 use ui::Window;
 use util::ResultExt;
-use workspace::Workspace;
+use workspace::{AppState, Workspace};
 use zeta::{ProviderDataCollection, ZetaInlineCompletionProvider};
 
-pub fn init(client: Arc<Client>, user_store: Entity<UserStore>, cx: &mut App) {
+pub fn init(cx: &mut App) {
+    let client = Client::global(cx);
+    let user_store = AppState::global(cx).user_store.clone();
     let editors: Rc<RefCell<HashMap<WeakEntity<Editor>, AnyWindowHandle>>> = Rc::default();
     cx.observe_new({
         let editors = editors.clone();

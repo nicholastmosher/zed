@@ -1180,7 +1180,7 @@ mod tests {
         cx.update(|cx| {
             language::init(cx);
             editor::init(cx);
-            workspace::init(app_state.clone(), cx);
+            workspace::init(cx);
             Project::init_settings(cx);
         });
 

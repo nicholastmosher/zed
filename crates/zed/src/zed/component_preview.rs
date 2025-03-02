@@ -32,7 +32,8 @@ use util::ResultExt as _;
 use workspace::{AppState, ItemId, SerializableItem, delete_unloaded_items};
 use workspace::{Item, Workspace, WorkspaceId, item::ItemEvent};
 
-pub fn init(app_state: Arc<AppState>, cx: &mut App) {
+pub fn init(cx: &mut App) {
+    let app_state = AppState::global(cx);
     workspace::register_serializable_item::<ComponentPreview>(cx);
 
     let app_state = app_state.clone();

@@ -12,6 +12,7 @@ use gpui::{SemanticVersion, TestAppContext, TestDispatcher};
 use http_client::{FakeHttpClient, Response};
 use node_runtime::NodeRuntime;
 use rand::{SeedableRng, rngs::StdRng};
+use release_channel::ReleaseChannelPlugin;
 use reqwest_client::ReqwestClient;
 use serde_json::json;
 use settings::SettingsStore;
@@ -53,7 +54,7 @@ fn init() -> TestAppContext {
     cx.update(|cx| {
         let store = SettingsStore::test(cx);
         cx.set_global(store);
-        release_channel::init(SemanticVersion::default(), cx);
+        cx.add_plugins(ReleaseChannelPlugin::new(SemanticVersion::default(), None));
     });
 
     cx

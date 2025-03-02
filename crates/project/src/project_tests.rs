@@ -32,6 +32,7 @@ use paths::{config_dir, tasks_file};
 use postage::stream::Stream as _;
 use pretty_assertions::{assert_eq, assert_matches};
 use rand::{Rng as _, rngs::StdRng};
+use release_channel::ReleaseChannelPlugin;
 use serde_json::json;
 #[cfg(not(windows))]
 use std::os;
@@ -8533,7 +8534,10 @@ pub fn init_test(cx: &mut gpui::TestAppContext) {
     cx.update(|cx| {
         let settings_store = SettingsStore::test(cx);
         cx.set_global(settings_store);
-        release_channel::init(SemanticVersion::default(), cx);
+
+        // was -> release_channel::init(SemanticVersion::default(), cx);
+        ReleaseChannelPlugin::new(SemanticVersion::default(), None).build(cx);
+
         language::init(cx);
         Project::init_settings(cx);
     });

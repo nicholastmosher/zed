@@ -1313,6 +1313,7 @@ pub mod tests {
     use lsp::FakeLanguageServer;
     use parking_lot::Mutex;
     use project::{FakeFs, Project};
+    use release_channel::ReleaseChannelPlugin;
     use serde_json::json;
     use settings::SettingsStore;
     use std::sync::atomic::{AtomicBool, AtomicU32, AtomicUsize, Ordering};
@@ -3442,7 +3443,8 @@ pub mod tests {
             let settings_store = SettingsStore::test(cx);
             cx.set_global(settings_store);
             theme::init(theme::LoadThemes::JustBase, cx);
-            release_channel::init(SemanticVersion::default(), cx);
+            // was -> release_channel::init(SemanticVersion::default(), cx);
+            ReleaseChannelPlugin::new(SemanticVersion::default(), None).build(cx);
             client::init_settings(cx);
             language::init(cx);
             Project::init_settings(cx);

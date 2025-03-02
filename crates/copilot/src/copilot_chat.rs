@@ -5,6 +5,7 @@ use std::sync::OnceLock;
 use anyhow::Context as _;
 use anyhow::{Result, anyhow};
 use chrono::DateTime;
+use client::GlobalClient;
 use collections::HashSet;
 use fs::Fs;
 use futures::{AsyncBufReadExt, AsyncReadExt, StreamExt, io::BufReader, stream::BoxStream};
@@ -344,8 +345,10 @@ pub struct CopilotChat {
     client: Arc<dyn HttpClient>,
 }
 
-pub fn init(fs: Arc<dyn Fs>, client: Arc<dyn HttpClient>, cx: &mut App) {
-    let copilot_chat = cx.new(|cx| CopilotChat::new(fs, client, cx));
+pub fn init(fs: Arc<dyn Fs>, cx: &mut App) {
+    let client = cx.global::<GlobalClient>();
+    let http = client.0.http_client();
+    let copilot_chat = cx.new(|cx| CopilotChat::new(fs, http, cx));
     cx.set_global(GlobalCopilotChat(copilot_chat));
 }
 

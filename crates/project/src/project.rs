@@ -39,7 +39,8 @@ pub use git_store::{
 use anyhow::{Context as _, Result, anyhow};
 use buffer_store::{BufferStore, BufferStoreEvent};
 use client::{
-    Client, Collaborator, PendingEntitySubscription, ProjectId, TypedEnvelope, UserStore, proto,
+    Client, Collaborator, GlobalClient, PendingEntitySubscription, ProjectId, TypedEnvelope,
+    UserStore, proto,
 };
 use clock::ReplicaId;
 
@@ -820,7 +821,8 @@ impl Project {
         ProjectSettings::register(cx);
     }
 
-    pub fn init(client: &Arc<Client>, cx: &mut App) {
+    pub fn init(cx: &mut App) {
+        let client = cx.global::<GlobalClient>().0.clone();
         connection_manager::init(client.clone(), cx);
         Self::init_settings(cx);
 
@@ -1518,7 +1520,7 @@ impl Project {
         let client = cx
             .update(|cx| client::Client::new(clock, http_client.clone(), cx))
             .unwrap();
-        let user_store = cx.new(|cx| UserStore::new(client.clone(), cx)).unwrap();
+        let user_store = cx.new(|cx| UserStore::new(cx)).unwrap();
         let project = cx
             .update(|cx| {
                 Project::local(
@@ -1559,7 +1561,8 @@ impl Project {
         let clock = Arc::new(FakeSystemClock::new());
         let http_client = http_client::FakeHttpClient::with_404_response();
         let client = cx.update(|cx| client::Client::new(clock, http_client.clone(), cx));
-        let user_store = cx.new(|cx| UserStore::new(client.clone(), cx));
+        cx.set_global(GlobalClient(client.clone()));
+        let user_store = cx.new(|cx| UserStore::new(cx));
         let project = cx.update(|cx| {
             Project::local(
                 client,

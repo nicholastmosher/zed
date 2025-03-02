@@ -7,11 +7,10 @@ use fs::Fs;
 use gpui::{App, BackgroundExecutor, SharedString, Task};
 use theme::{ThemeRegistry, ThemeSettings};
 
-pub fn init(
-    extension_host_proxy: Arc<ExtensionHostProxy>,
-    theme_registry: Arc<ThemeRegistry>,
-    executor: BackgroundExecutor,
-) {
+pub fn init(cx: &mut App) {
+    let theme_registry = ThemeRegistry::global(cx);
+    let executor = cx.background_executor().clone();
+    let extension_host_proxy = ExtensionHostProxy::global(cx);
     extension_host_proxy.register_theme_proxy(ThemeRegistryProxy {
         theme_registry,
         executor,

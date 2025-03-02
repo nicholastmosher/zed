@@ -121,7 +121,7 @@ impl Render for DragDrop {
 }
 
 fn main() {
-    Application::new().run(|cx: &mut App| {
+    Application::new().add_plugins(|cx: &mut App| {
         let bounds = Bounds::centered(None, size(px(800.), px(600.0)), cx);
         cx.open_window(
             WindowOptions {
@@ -133,5 +133,6 @@ fn main() {
         .unwrap();
 
         cx.activate(true);
-    });
+    })
+    .run();
 }

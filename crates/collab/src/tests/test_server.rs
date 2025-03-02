@@ -8,8 +8,8 @@ use anyhow::anyhow;
 use call::ActiveCall;
 use channel::{ChannelBuffer, ChannelStore};
 use client::{
-    self, ChannelId, Client, Connection, Credentials, EstablishConnectionError, UserStore,
-    proto::PeerId,
+    self, ChannelId, Client, Connection, Credentials, EstablishConnectionError, GlobalClient,
+    UserStore, proto::PeerId,
 };
 use clock::FakeSystemClock;
 use collab_ui::channel_view::ChannelView;
@@ -163,13 +163,18 @@ impl TestServer {
         let fs = FakeFs::new(cx.executor());
 
         cx.update(|cx| {
-            gpui_tokio::init(cx);
+            // gpui_tokio::init(cx);
+            cx.add_plugins(gpui_tokio::GpuiTokioPlugin::new());
             if cx.has_global::<SettingsStore>() {
                 panic!("Same cx used to create two test clients")
             }
             let settings = SettingsStore::test(cx);
             cx.set_global(settings);
-            release_channel::init(SemanticVersion::default(), cx);
+            // release_channel::init(SemanticVersion::default(), cx);
+            cx.add_plugins(release_channel::ReleaseChannelPlugin::new(
+                SemanticVersion::default(),
+                None,
+            ));
             client::init_settings(cx);
         });
 
@@ -198,6 +203,7 @@ impl TestServer {
         };
         let client_name = name.to_string();
         let mut client = cx.update(|cx| Client::new(clock, http.clone(), cx));
+
         let server = self.server.clone();
         let db = self.app_state.db.clone();
         let connection_killers = self.connection_killers.clone();
@@ -272,13 +278,14 @@ impl TestServer {
                     }
                 })
             });
+        cx.set_global(GlobalClient(client.clone()));
 
         let git_hosting_provider_registry = cx.update(GitHostingProviderRegistry::default_global);
         git_hosting_provider_registry
             .register_hosting_provider(Arc::new(git_hosting_providers::Github::public_instance()));
 
-        let user_store = cx.new(|cx| UserStore::new(client.clone(), cx));
-        let workspace_store = cx.new(|cx| WorkspaceStore::new(client.clone(), cx));
+        let user_store = cx.new(|cx| UserStore::new(cx));
+        let workspace_store = cx.new(|cx| WorkspaceStore::new(cx));
         let language_registry = Arc::new(LanguageRegistry::test(cx.executor()));
         let session = cx.new(|cx| AppSession::new(Session::test(), cx));
         let app_state = Arc::new(workspace::AppState {
@@ -296,15 +303,15 @@ impl TestServer {
 
         cx.update(|cx| {
             theme::init(theme::LoadThemes::JustBase, cx);
-            Project::init(&client, cx);
-            client::init(&client, cx);
+            Project::init(cx);
+            client::init(cx);
             language::init(cx);
             editor::init(cx);
-            workspace::init(app_state.clone(), cx);
-            call::init(client.clone(), user_store.clone(), cx);
-            channel::init(&client, user_store.clone(), cx);
-            notifications::init(client.clone(), user_store, cx);
-            collab_ui::init(&app_state, cx);
+            workspace::init(cx);
+            call::init(cx);
+            channel::init(cx);
+            notifications::init(cx);
+            collab_ui::init(cx);
             file_finder::init(cx);
             menu::init();
             cx.bind_keys(

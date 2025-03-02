@@ -11,7 +11,7 @@ use parking_lot::RwLock;
 use crate::{Extension, SlashCommand};
 
 #[derive(Default)]
-struct GlobalExtensionHostProxy(Arc<ExtensionHostProxy>);
+pub struct GlobalExtensionHostProxy(pub Arc<ExtensionHostProxy>);
 
 impl Global for GlobalExtensionHostProxy {}
 

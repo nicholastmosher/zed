@@ -272,6 +272,7 @@ mod tests {
     use language::{FakeLspAdapter, Language, LanguageConfig, LanguageMatcher};
     use lsp::OneOf;
     use project::FakeFs;
+    use release_channel::ReleaseChannelPlugin;
     use serde_json::json;
     use settings::SettingsStore;
     use std::{path::Path, sync::Arc};
@@ -416,7 +417,7 @@ mod tests {
             let store = SettingsStore::test(cx);
             cx.set_global(store);
             theme::init(theme::LoadThemes::JustBase, cx);
-            release_channel::init(SemanticVersion::default(), cx);
+            ReleaseChannelPlugin::new(SemanticVersion::default(), None).build(cx);
             language::init(cx);
             Project::init_settings(cx);
             workspace::init_settings(cx);

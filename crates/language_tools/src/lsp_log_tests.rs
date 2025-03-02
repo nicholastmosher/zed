@@ -9,6 +9,7 @@ use language::{FakeLspAdapter, Language, LanguageConfig, LanguageMatcher, tree_s
 use lsp::LanguageServerName;
 use lsp_log::LogKind;
 use project::{FakeFs, Project};
+use release_channel::ReleaseChannelPlugin;
 use serde_json::json;
 use settings::SettingsStore;
 use util::path;
@@ -109,7 +110,8 @@ fn init_test(cx: &mut gpui::TestAppContext) {
         cx.set_global(settings_store);
         workspace::init_settings(cx);
         theme::init(theme::LoadThemes::JustBase, cx);
-        release_channel::init(SemanticVersion::default(), cx);
+        // was -> release_channel::init(SemanticVersion::default(), cx);
+        ReleaseChannelPlugin::new(SemanticVersion::default(), None).build(cx);
         language::init(cx);
         client::init_settings(cx);
         Project::init_settings(cx);

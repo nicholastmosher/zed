@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
-use client::{Client, UserStore};
-use fs::Fs;
+use client::{Client, GlobalClient, GlobalUserStore, UserStore};
 use gpui::{App, Context, Entity};
 use language_model::LanguageModelRegistry;
 use provider::deepseek::DeepSeekLanguageModelProvider;
+use workspace::AppState;
 
 pub mod provider;
 mod settings;
@@ -21,7 +21,10 @@ use crate::provider::ollama::OllamaLanguageModelProvider;
 use crate::provider::open_ai::OpenAiLanguageModelProvider;
 pub use crate::settings::*;
 
-pub fn init(user_store: Entity<UserStore>, client: Arc<Client>, fs: Arc<dyn Fs>, cx: &mut App) {
+pub fn init(cx: &mut App) {
+    let user_store = cx.global::<GlobalUserStore>().0.clone();
+    let fs = AppState::global(cx).fs.clone();
+    let client = cx.global::<GlobalClient>().0.clone();
     crate::settings::init(fs, cx);
     let registry = LanguageModelRegistry::global(cx);
     registry.update(cx, |registry, cx| {

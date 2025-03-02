@@ -26,17 +26,15 @@ mod tool_compatibility;
 mod tool_use;
 mod ui;
 
-use std::sync::Arc;
-
 use agent_settings::{AgentProfileId, AgentSettings, LanguageModelSelection};
 use assistant_slash_command::SlashCommandRegistry;
-use client::Client;
+use client::GlobalClient;
 use feature_flags::FeatureFlagAppExt as _;
-use fs::Fs;
-use gpui::{App, actions, impl_actions};
-use language::LanguageRegistry;
+use fs::GlobalFs;
+use gpui::{App, Global, actions, impl_actions};
+use language::GlobalLanguageRegistry;
 use language_model::{LanguageModelId, LanguageModelProviderId, LanguageModelRegistry};
-use prompt_store::PromptBuilder;
+use prompt_store::GlobalPromptBuilder;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use settings::{Settings as _, SettingsStore};
@@ -115,15 +113,16 @@ impl ManageProfiles {
 
 impl_actions!(agent, [NewThread, ManageProfiles]);
 
+pub struct GlobalIsEval(pub bool);
+impl Global for GlobalIsEval {}
+
 /// Initializes the `agent` crate.
-pub fn init(
-    fs: Arc<dyn Fs>,
-    client: Arc<Client>,
-    prompt_builder: Arc<PromptBuilder>,
-    language_registry: Arc<LanguageRegistry>,
-    is_eval: bool,
-    cx: &mut App,
-) {
+pub fn init(cx: &mut App) {
+    let fs = cx.global::<GlobalFs>().0.clone();
+    let client = cx.global::<GlobalClient>().0.clone();
+    let prompt_builder = cx.global::<GlobalPromptBuilder>().0.clone();
+    let language_registry = cx.global::<GlobalLanguageRegistry>().0.clone();
+    let is_eval = cx.global::<GlobalIsEval>().0;
     AgentSettings::register(cx);
     SlashCommandSettings::register(cx);
 

@@ -38,7 +38,7 @@ use language::{
     LanguageConfig, LanguageMatcher, LanguageName, LanguageQueries, LoadedLanguage,
     QUERY_FILENAME_PREFIXES, Rope,
 };
-use node_runtime::NodeRuntime;
+use node_runtime::{GlobalNodeRuntime, NodeRuntime};
 use project::ContextProviderWithTasks;
 use release_channel::ReleaseChannel;
 use remote::SshRemoteClient;
@@ -179,13 +179,11 @@ pub struct ExtensionIndexLanguageEntry {
 
 actions!(zed, [ReloadExtensions]);
 
-pub fn init(
-    extension_host_proxy: Arc<ExtensionHostProxy>,
-    fs: Arc<dyn Fs>,
-    client: Arc<Client>,
-    node_runtime: NodeRuntime,
-    cx: &mut App,
-) {
+pub fn init(cx: &mut App) {
+    let extension_host_proxy = ExtensionHostProxy::global(cx);
+    let fs = <dyn Fs>::global(cx);
+    let client = Client::global(cx);
+    let node_runtime = cx.global::<GlobalNodeRuntime>().0.clone();
     ExtensionSettings::register(cx);
 
     let store = cx.new(move |cx| {

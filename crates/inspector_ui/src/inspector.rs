@@ -1,13 +1,14 @@
 use anyhow::{Context as _, anyhow};
 use gpui::{App, DivInspectorState, Inspector, InspectorElementId, IntoElement, Window};
-use std::{cell::OnceCell, path::Path, sync::Arc};
+use std::{cell::OnceCell, path::Path};
 use ui::{Label, Tooltip, prelude::*};
 use util::{ResultExt as _, command::new_smol_command};
-use workspace::AppState;
+use workspace::GlobalAppState;
 
 use crate::div_inspector::DivInspector;
 
-pub fn init(app_state: Arc<AppState>, cx: &mut App) {
+pub fn init(cx: &mut App) {
+    let app_state = cx.global::<GlobalAppState>().0.clone();
     cx.on_action(|_: &zed_actions::dev::ToggleInspector, cx| {
         let Some(active_window) = cx
             .active_window()

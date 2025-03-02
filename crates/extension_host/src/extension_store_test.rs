@@ -10,12 +10,12 @@ use fs::{FakeFs, Fs, RealFs};
 use futures::{AsyncReadExt, StreamExt, io::BufReader};
 use gpui::{AppContext as _, SemanticVersion, SharedString, TestAppContext};
 use http_client::{FakeHttpClient, Response};
-use language::{BinaryStatus, LanguageMatcher, LanguageRegistry};
+use language::{BinaryStatus, GlobalLanguageRegistry, LanguageMatcher, LanguageRegistry};
 use lsp::LanguageServerName;
 use node_runtime::NodeRuntime;
 use parking_lot::Mutex;
 use project::{DEFAULT_COMPLETION_CONTEXT, Project};
-use release_channel::AppVersion;
+use release_channel::{AppVersion, ReleaseChannelPlugin};
 use reqwest_client::ReqwestClient;
 use serde_json::json;
 use settings::{Settings as _, SettingsStore};
@@ -267,16 +267,19 @@ async fn test_extension_store(cx: &mut TestAppContext) {
 
     let proxy = Arc::new(ExtensionHostProxy::new());
     let theme_registry = Arc::new(ThemeRegistry::new(Box::new(())));
-    theme_extension::init(proxy.clone(), theme_registry.clone(), cx.executor());
+    theme_extension::init(&mut *cx.app.borrow_mut());
     let language_registry = Arc::new(LanguageRegistry::test(cx.executor()));
-    language_extension::init(proxy.clone(), language_registry.clone());
+    cx.set_global(GlobalLanguageRegistry(language_registry.clone()));
+    cx.update(|cx| {
+        language_extension::init(cx);
+    });
     let node_runtime = NodeRuntime::unavailable();
 
     let store = cx.new(|cx| {
         ExtensionStore::new(
             PathBuf::from("/the-extension-dir"),
             None,
-            proxy.clone(),
+            ExtensionHostProxy::global(cx),
             fs.clone(),
             http_client.clone(),
             http_client.clone(),
@@ -545,11 +548,19 @@ async fn test_extension_store_with_test_extension(cx: &mut TestAppContext) {
 
     let project = Project::test(fs.clone(), [project_dir.as_path()], cx).await;
 
-    let proxy = Arc::new(ExtensionHostProxy::new());
-    let theme_registry = Arc::new(ThemeRegistry::new(Box::new(())));
-    theme_extension::init(proxy.clone(), theme_registry.clone(), cx.executor());
+    // let proxy = Arc::new(ExtensionHostProxy::new());
+    // let theme_registry = Arc::new(ThemeRegistry::new(Box::new(())));
+    cx.update(|cx| {
+        ExtensionHostProxy::default_global(cx);
+        ThemeRegistry::default_global(cx);
+        theme_extension::init(cx);
+    });
     let language_registry = project.read_with(cx, |project, _cx| project.languages().clone());
-    language_extension::init(proxy.clone(), language_registry.clone());
+    cx.set_global(GlobalLanguageRegistry(language_registry.clone()));
+    cx.update(|cx| {
+        language_extension::init(cx);
+    });
+
     let node_runtime = NodeRuntime::unavailable();
 
     let mut status_updates = language_registry.language_server_binary_statuses();
@@ -643,7 +654,7 @@ async fn test_extension_store_with_test_extension(cx: &mut TestAppContext) {
         ExtensionStore::new(
             extensions_dir.clone(),
             Some(cache_dir),
-            proxy,
+            ExtensionHostProxy::global(cx),
             fs.clone(),
             extension_client.clone(),
             builder_client,
@@ -825,7 +836,8 @@ fn init_test(cx: &mut TestAppContext) {
     cx.update(|cx| {
         let store = SettingsStore::test(cx);
         cx.set_global(store);
-        release_channel::init(SemanticVersion::default(), cx);
+        // was -> release_channel::init(SemanticVersion::default(), cx);
+        ReleaseChannelPlugin::new(SemanticVersion::default(), None).build(cx);
         extension::init(cx);
         theme::init(theme::LoadThemes::JustBase, cx);
         Project::init_settings(cx);

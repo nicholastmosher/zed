@@ -2025,7 +2025,7 @@ mod tests {
             RefreshLlmTokenListener::register(client.clone(), cx);
         });
         let server = FakeServer::for_client(42, &client, cx).await;
-        let user_store = cx.new(|cx| UserStore::new(client.clone(), cx));
+        let user_store = cx.new(|cx| UserStore::new(cx));
         let zeta = cx.new(|cx| Zeta::new(None, client, user_store, cx));
 
         let buffer = cx.new(|cx| Buffer::local(buffer_content, cx));
@@ -2079,7 +2079,7 @@ mod tests {
             RefreshLlmTokenListener::register(client.clone(), cx);
         });
         let server = FakeServer::for_client(42, &client, cx).await;
-        let user_store = cx.new(|cx| UserStore::new(client.clone(), cx));
+        let user_store = cx.new(|cx| UserStore::new(cx));
         let zeta = cx.new(|cx| Zeta::new(None, client, user_store, cx));
 
         let buffer = cx.new(|cx| Buffer::local(buffer_content, cx));

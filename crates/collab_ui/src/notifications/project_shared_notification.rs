@@ -4,14 +4,13 @@ use call::{ActiveCall, room};
 use client::User;
 use collections::HashMap;
 use gpui::{App, Size};
-use std::sync::{Arc, Weak};
+use std::sync::Arc;
 
 use ui::{Button, Label, prelude::*};
 use util::ResultExt;
-use workspace::AppState;
+use workspace::GlobalAppState;
 
-pub fn init(app_state: &Arc<AppState>, cx: &mut App) {
-    let app_state = Arc::downgrade(app_state);
+pub fn init(cx: &mut App) {
     let active_call = ActiveCall::global(cx);
     let mut notification_windows = HashMap::default();
     cx.subscribe(&active_call, move |_, event, cx| match event {
@@ -34,7 +33,6 @@ pub fn init(app_state: &Arc<AppState>, cx: &mut App) {
                                 owner.clone(),
                                 *project_id,
                                 worktree_root_names.clone(),
-                                app_state.clone(),
                             )
                         })
                     })
@@ -83,29 +81,21 @@ pub struct ProjectSharedNotification {
     project_id: u64,
     worktree_root_names: Vec<String>,
     owner: Arc<User>,
-    app_state: Weak<AppState>,
 }
 
 impl ProjectSharedNotification {
-    fn new(
-        owner: Arc<User>,
-        project_id: u64,
-        worktree_root_names: Vec<String>,
-        app_state: Weak<AppState>,
-    ) -> Self {
+    fn new(owner: Arc<User>, project_id: u64, worktree_root_names: Vec<String>) -> Self {
         Self {
             project_id,
             worktree_root_names,
             owner,
-            app_state,
         }
     }
 
     fn join(&mut self, cx: &mut Context<Self>) {
-        if let Some(app_state) = self.app_state.upgrade() {
-            workspace::join_in_room_project(self.project_id, self.owner.id, app_state, cx)
-                .detach_and_log_err(cx);
-        }
+        let app_state = cx.read_global::<GlobalAppState, _>(|state, _| state.0.clone());
+        workspace::join_in_room_project(self.project_id, self.owner.id, app_state, cx)
+            .detach_and_log_err(cx);
     }
 
     fn dismiss(&mut self, cx: &mut Context<Self>) {

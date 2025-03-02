@@ -7,7 +7,8 @@ use extension::{ExtensionDebugAdapterProviderProxy, ExtensionHostProxy};
 use extension_dap_adapter::ExtensionDapAdapter;
 use gpui::App;
 
-pub fn init(extension_host_proxy: Arc<ExtensionHostProxy>, cx: &mut App) {
+pub fn init(cx: &mut App) {
+    let extension_host_proxy = ExtensionHostProxy::global(cx).clone();
     let language_server_registry_proxy = DebugAdapterRegistryProxy::new(cx);
     extension_host_proxy.register_debug_adapter_proxy(language_server_registry_proxy);
 }

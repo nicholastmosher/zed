@@ -27,7 +27,8 @@ pub use crate::session::Session;
 
 pub const KERNEL_DOCS_URL: &str = "https://zed.dev/docs/repl#changing-kernels";
 
-pub fn init(fs: Arc<dyn Fs>, cx: &mut App) {
+pub fn init(cx: &mut App) {
+    let fs = <dyn Fs>::global(cx);
     set_dispatcher(zed_dispatcher(cx));
     JupyterSettings::register(cx);
     ::editor::init_settings(cx);

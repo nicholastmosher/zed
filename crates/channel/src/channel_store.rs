@@ -3,7 +3,9 @@ mod channel_index;
 use crate::{ChannelMessage, channel_buffer::ChannelBuffer, channel_chat::ChannelChat};
 use anyhow::{Context as _, Result, anyhow};
 use channel_index::ChannelIndex;
-use client::{ChannelId, Client, ClientSettings, Subscription, User, UserId, UserStore};
+use client::{
+    ChannelId, Client, ClientSettings, GlobalClient, Subscription, User, UserId, UserStore,
+};
 use collections::{HashMap, HashSet, hash_map};
 use futures::{Future, FutureExt, StreamExt, channel::mpsc, future::Shared};
 use gpui::{
@@ -21,8 +23,8 @@ use util::{ResultExt, maybe};
 
 pub const RECONNECT_TIMEOUT: Duration = Duration::from_secs(30);
 
-pub fn init(client: &Arc<Client>, user_store: Entity<UserStore>, cx: &mut App) {
-    let channel_store = cx.new(|cx| ChannelStore::new(client.clone(), user_store.clone(), cx));
+pub fn init(user_store: Entity<UserStore>, cx: &mut App) {
+    let channel_store = cx.new(|cx| ChannelStore::new(user_store.clone(), cx));
     cx.set_global(GlobalChannelStore(channel_store));
 }
 
@@ -156,7 +158,8 @@ impl ChannelStore {
         cx.global::<GlobalChannelStore>().0.clone()
     }
 
-    pub fn new(client: Arc<Client>, user_store: Entity<UserStore>, cx: &mut Context<Self>) -> Self {
+    pub fn new(user_store: Entity<UserStore>, cx: &mut Context<Self>) -> Self {
+        let client = cx.read_global::<GlobalClient, _>(|client, _| client.0.clone());
         let rpc_subscriptions = [
             client.add_message_handler(cx.weak_entity(), Self::handle_update_channels),
             client.add_message_handler(cx.weak_entity(), Self::handle_update_user_channels),

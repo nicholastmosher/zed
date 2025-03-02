@@ -21,6 +21,7 @@ assistant_tool.workspace = true
 async-watch.workspace = true
 buffer_diff.workspace = true
 chrono.workspace = true
+client.workspace = true
 collections.workspace = true
 component.workspace = true
 derive_more.workspace = true

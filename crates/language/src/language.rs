@@ -77,8 +77,8 @@ pub use buffer::Operation;
 pub use buffer::*;
 pub use diagnostic_set::{DiagnosticEntry, DiagnosticGroup};
 pub use language_registry::{
-    AvailableLanguage, BinaryStatus, LanguageNotFound, LanguageQueries, LanguageRegistry,
-    QUERY_FILENAME_PREFIXES,
+    AvailableLanguage, BinaryStatus, GlobalLanguageRegistry, LanguageNotFound, LanguageQueries,
+    LanguageRegistry, QUERY_FILENAME_PREFIXES,
 };
 pub use lsp::{LanguageServerId, LanguageServerName};
 pub use outline::*;

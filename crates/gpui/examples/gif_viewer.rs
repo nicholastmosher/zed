@@ -24,7 +24,7 @@ impl Render for GifViewer {
 
 fn main() {
     env_logger::init();
-    Application::new().run(|cx: &mut App| {
+    Application::new().add_plugins(|cx: &mut App| {
         let gif_path =
             PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("examples/image/black-cat-typing.gif");
 
@@ -37,5 +37,6 @@ fn main() {
         )
         .unwrap();
         cx.activate(true);
-    });
+    })
+    .run();
 }

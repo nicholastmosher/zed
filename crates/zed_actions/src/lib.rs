@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 // These may provide relevant context:
 // https://github.com/rust-lang/rust/issues/47384
 // https://github.com/mmastrac/rust-ctor/issues/280
-pub fn init() {}
+pub fn init(_cx: &mut gpui::App) {}
 
 #[derive(Clone, PartialEq, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]

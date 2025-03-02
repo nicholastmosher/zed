@@ -1,5 +1,5 @@
 use anyhow::{Context as _, Result};
-use client::{Client, TelemetrySettings};
+use client::{Client, GlobalClient, TelemetrySettings};
 use db::RELEASE_CHANNEL;
 use db::kvp::KEY_VALUE_STORE;
 use gpui::{
@@ -145,7 +145,8 @@ struct GlobalAutoUpdate(Option<Entity<AutoUpdater>>);
 
 impl Global for GlobalAutoUpdate {}
 
-pub fn init(http_client: Arc<HttpClientWithUrl>, cx: &mut App) {
+pub fn init(cx: &mut App) {
+    let http_client = cx.global::<GlobalClient>().0.http_client();
     AutoUpdateSetting::register(cx);
 
     cx.observe_new(|workspace: &mut Workspace, _window, _cx| {

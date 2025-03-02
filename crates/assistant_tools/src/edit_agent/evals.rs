@@ -7,9 +7,9 @@ use crate::{
 };
 use Role::*;
 use assistant_tool::ToolRegistry;
-use client::{Client, UserStore};
+use client::{Client, GlobalClient, GlobalUserStore, UserStore};
 use collections::HashMap;
-use fs::FakeFs;
+use fs::{FakeFs, GlobalFs};
 use futures::{FutureExt, future::LocalBoxFuture};
 use gpui::{AppContext, TestAppContext};
 use indoc::{formatdoc, indoc};
@@ -1421,6 +1421,7 @@ impl EditAgentTest {
         cx.executor().allow_parking();
 
         let fs = FakeFs::new(cx.executor().clone());
+        cx.set_global(GlobalFs(fs.clone()));
         cx.update(|cx| {
             settings::init(cx);
             gpui_tokio::init(cx);
@@ -1429,14 +1430,16 @@ impl EditAgentTest {
 
             client::init_settings(cx);
             let client = Client::production(cx);
-            let user_store = cx.new(|cx| UserStore::new(client.clone(), cx));
+            cx.set_global(GlobalClient(client.clone()));
+            let user_store = cx.new(|cx| UserStore::new(cx));
+            cx.set_global(GlobalUserStore(user_store));
 
             settings::init(cx);
             Project::init_settings(cx);
             language::init(cx);
-            language_model::init(client.clone(), cx);
-            language_models::init(user_store.clone(), client.clone(), fs.clone(), cx);
-            crate::init(client.http_client(), cx);
+            language_model::init(cx);
+            language_models::init(cx);
+            crate::init(cx);
         });
 
         fs.insert_tree("/root", json!({})).await;

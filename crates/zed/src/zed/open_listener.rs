@@ -130,16 +130,14 @@ impl OpenRequest {
 }
 
 #[derive(Clone)]
-pub struct OpenListener(UnboundedSender<Vec<String>>);
+pub struct OpenListenerTx(UnboundedSender<Vec<String>>);
+impl Global for OpenListenerTx {}
 
-impl Global for OpenListener {}
+// Gets .take()n by a watcher task
+pub struct OpenListenerRx(pub Option<UnboundedReceiver<Vec<String>>>);
+impl Global for OpenListenerRx {}
 
-impl OpenListener {
-    pub fn new() -> (Self, UnboundedReceiver<Vec<String>>) {
-        let (tx, rx) = mpsc::unbounded();
-        (OpenListener(tx), rx)
-    }
-
+impl OpenListenerTx {
     pub fn open_urls(&self, urls: Vec<String>) {
         self.0
             .unbounded_send(urls)
@@ -148,11 +146,18 @@ impl OpenListener {
     }
 }
 
+pub fn init(cx: &mut App) {
+    let (tx, rx) = mpsc::unbounded();
+    cx.set_global(OpenListenerTx(tx));
+    cx.set_global(OpenListenerRx(Some(rx)));
+}
+
 #[cfg(any(target_os = "linux", target_os = "freebsd"))]
-pub fn listen_for_cli_connections(opener: OpenListener) -> Result<()> {
+pub fn listen_for_cli_connections(cx: &mut App) -> Result<()> {
     use release_channel::RELEASE_CHANNEL_NAME;
     use std::os::unix::net::UnixDatagram;
 
+    let opener = cx.global::<OpenListenerTx>();
     let sock_path = paths::data_dir().join(format!("zed-{}.sock", *RELEASE_CHANNEL_NAME));
     // remove the socket if the process listening on it has died
     if let Err(e) = UnixDatagram::unbound()?.connect(&sock_path) {
@@ -269,7 +274,7 @@ pub async fn handle_cli_connection(
                     cx.update(|cx| {
                         match OpenRequest::parse(urls, cx) {
                             Ok(open_request) => {
-                                handle_open_request(open_request, app_state.clone(), cx);
+                                handle_open_request(open_request, cx);
                                 responses.send(CliResponse::Exit { status: 0 }).log_err();
                             }
                             Err(e) => {

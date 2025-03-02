@@ -22,6 +22,7 @@ async-watch.workspace = true
 async-tar.workspace = true
 async-trait.workspace = true
 futures.workspace = true
+gpui.workspace = true
 http_client.workspace = true
 log.workspace = true
 paths.workspace = true

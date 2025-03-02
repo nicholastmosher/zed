@@ -2,7 +2,7 @@ use anyhow::Result;
 use assets::Assets;
 use fs::Fs;
 use futures::StreamExt;
-use gpui::{App, AppContext as _, AssetSource};
+use gpui::{App, AppContext as _, AssetSource, Global};
 use handlebars::{Handlebars, RenderError};
 use language::{BufferSnapshot, LanguageName, Point};
 use parking_lot::Mutex;
@@ -125,6 +125,8 @@ pub struct PromptLoadingParams<'a> {
 pub struct PromptBuilder {
     handlebars: Arc<Mutex<Handlebars<'static>>>,
 }
+pub struct GlobalPromptBuilder(pub Arc<PromptBuilder>);
+impl Global for GlobalPromptBuilder {}
 
 impl PromptBuilder {
     pub fn load(fs: Arc<dyn Fs>, stdout_is_a_pty: bool, cx: &mut App) -> Arc<Self> {
