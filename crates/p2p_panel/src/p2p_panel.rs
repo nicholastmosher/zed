@@ -1,11 +1,17 @@
 use std::sync::Arc;
 
+use anyhow::Context as _;
+use db::kvp::KEY_VALUE_STORE;
 use gpui::*;
+use serde::{Deserialize, Serialize};
+use util::ResultExt as _;
 use workspace::{
     dock::{DockPosition, PanelEvent},
     ui::{h_flex, IconName},
     AppState, Panel, Workspace,
 };
+
+mod p2p_panel_settings;
 
 #[rustfmt::skip]
 actions!(
@@ -19,15 +25,22 @@ pub fn init(app_state: &Arc<AppState>, cx: &mut App) {
     cx.observe_new(
         |workspace: &mut Workspace, _window, _cx: &mut Context<Workspace>| {
             workspace.register_action(|workspace, _: &ToggleFocus, window, cx| {
-                workspace.toggle_panel_focus::<Libp2pPanel>(window, cx);
+                workspace.toggle_panel_focus::<P2pPanel>(window, cx);
             });
         },
     )
     .detach();
 }
 
+const P2P_PANEL_KEY: &str = "P2pPanel";
+
+#[derive(Serialize, Deserialize)]
+struct SerializedP2pPanel {
+    width: Option<Pixels>,
+}
+
 // pub struct ChatPanel {
-pub struct Libp2pPanel {
+pub struct P2pPanel {
     message_list: ListState,
     width: Option<Pixels>,
     active: bool,
@@ -40,7 +53,35 @@ pub struct Libp2pPanel {
     last_acknowledged_message_id: Option<u64>,
 }
 
-impl Libp2pPanel {
+impl P2pPanel {
+    pub async fn load(
+        workspace: WeakEntity<Workspace>,
+        mut cx: AsyncWindowContext,
+    ) -> anyhow::Result<Entity<Self>> {
+        let serialized_panel = cx
+            .background_executor()
+            .spawn(async move { KEY_VALUE_STORE.read_kvp(P2P_PANEL_KEY) })
+            .await
+            .context("loading p2p panel")
+            .log_err()
+            .flatten()
+            .map(|panel| serde_json::from_str::<SerializedP2pPanel>(&panel))
+            .transpose()
+            .log_err()
+            .flatten();
+
+        workspace.update_in(&mut cx, |workspace, window, cx| {
+            let panel = Self::new(workspace, window, cx);
+            if let Some(serialized_panel) = serialized_panel {
+                panel.update(cx, |panel, cx| {
+                    panel.width = serialized_panel.width.map(|px| px.round());
+                    cx.notify();
+                });
+            }
+            panel
+        })
+    }
+
     pub fn new(
         workspace: &mut Workspace,
         window: &mut Window,
@@ -98,17 +139,17 @@ impl Libp2pPanel {
     }
 }
 
-impl Focusable for Libp2pPanel {
+impl Focusable for P2pPanel {
     fn focus_handle(&self, cx: &App) -> FocusHandle {
         self.focus_handle.clone()
     }
 }
 
-impl EventEmitter<PanelEvent> for Libp2pPanel {}
+impl EventEmitter<PanelEvent> for P2pPanel {}
 
-impl Panel for Libp2pPanel {
+impl Panel for P2pPanel {
     fn persistent_name() -> &'static str {
-        "Libp2p"
+        "P2p"
     }
 
     fn position(&self, window: &Window, cx: &App) -> DockPosition {
@@ -134,11 +175,11 @@ impl Panel for Libp2pPanel {
     fn set_size(&mut self, size: Option<Pixels>, window: &mut Window, cx: &mut Context<Self>) {}
 
     fn icon(&self, window: &Window, cx: &App) -> Option<workspace::ui::IconName> {
-        Some(IconName::FileTree)
+        Some(IconName::DatabaseZap)
     }
 
     fn icon_tooltip(&self, window: &Window, cx: &App) -> Option<&'static str> {
-        Some("Libp2p")
+        Some("P2p")
     }
 
     fn toggle_action(&self) -> Box<dyn Action> {
@@ -150,7 +191,7 @@ impl Panel for Libp2pPanel {
     }
 }
 
-impl Render for Libp2pPanel {
+impl Render for P2pPanel {
     fn render(&mut self, window: &mut Window, cx: &mut Context<'_, Self>) -> impl IntoElement {
         h_flex().size_full().child("Hello, world!")
     }

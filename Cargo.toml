@@ -86,7 +86,6 @@ members = [
     "crates/language_tools",
     "crates/languages",
     "crates/livekit_api",
-    "crates/libp2p_panel",
     "crates/livekit_client",
     "crates/lmstudio",
     "crates/lsp",
@@ -103,6 +102,7 @@ members = [
     "crates/open_ai",
     "crates/outline",
     "crates/outline_panel",
+    "crates/p2p_panel",
     "crates/panel",
     "crates/paths",
     "crates/picker",
@@ -291,7 +291,7 @@ language_selector = { path = "crates/language_selector" }
 language_tools = { path = "crates/language_tools" }
 languages = { path = "crates/languages" }
 livekit_api = { path = "crates/livekit_api" }
-libp2p_panel = { path = "crates/libp2p_panel" }
+p2p_panel = { path = "crates/p2p_panel" }
 livekit_client = { path = "crates/livekit_client" }
 lmstudio = { path = "crates/lmstudio" }
 lsp = { path = "crates/lsp" }

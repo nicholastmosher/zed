@@ -39,6 +39,7 @@ use paths::{
     local_debug_file_relative_path, local_settings_file_relative_path,
     local_tasks_file_relative_path,
 };
+use p2p_panel::P2pPanel;
 use project::{DirectoryLister, ProjectItem};
 use project_panel::ProjectPanel;
 use prompt_store::PromptBuilder;
@@ -406,6 +407,7 @@ fn initialize_panels(
     cx.spawn_in(window, async move |workspace_handle, cx| {
         let project_panel = ProjectPanel::load(workspace_handle.clone(), cx.clone());
         let outline_panel = OutlinePanel::load(workspace_handle.clone(), cx.clone());
+        let p2p_panel = P2pPanel::load(workspace_handle.clone(), cx.clone());
         let terminal_panel = TerminalPanel::load(workspace_handle.clone(), cx.clone());
         let channels_panel =
             collab_ui::collab_panel::CollabPanel::load(workspace_handle.clone(), cx.clone());
@@ -419,6 +421,7 @@ fn initialize_panels(
         let (
             project_panel,
             outline_panel,
+            p2p_panel,
             terminal_panel,
             channels_panel,
             chat_panel,
@@ -426,6 +429,7 @@ fn initialize_panels(
         ) = futures::try_join!(
             project_panel,
             outline_panel,
+            p2p_panel,
             terminal_panel,
             channels_panel,
             chat_panel,
@@ -435,6 +439,7 @@ fn initialize_panels(
         workspace_handle.update_in(cx, |workspace, window, cx| {
             workspace.add_panel(project_panel, window, cx);
             workspace.add_panel(outline_panel, window, cx);
+            workspace.add_panel(p2p_panel, window, cx);
             workspace.add_panel(terminal_panel, window, cx);
             workspace.add_panel(channels_panel, window, cx);
             workspace.add_panel(chat_panel, window, cx);
@@ -799,6 +804,14 @@ fn register_actions(
              window: &mut Window,
              cx: &mut Context<Workspace>| {
                 workspace.toggle_panel_focus::<OutlinePanel>(window, cx);
+            },
+        )
+        .register_action(
+            |workspace: &mut Workspace,
+             _: &p2p_panel::ToggleFocus,
+             window: &mut Window,
+             cx: &mut Context<Workspace>| {
+                workspace.toggle_panel_focus::<P2pPanel>(window, cx);
             },
         )
         .register_action(

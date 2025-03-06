@@ -76,7 +76,6 @@ language_selector.workspace = true
 language_tools.workspace = true
 languages = { workspace = true, features = ["load-grammars"] }
 libc.workspace = true
-libp2p_panel.workspace = true
 log.workspace = true
 markdown_preview.workspace = true
 menu.workspace = true
@@ -87,6 +86,7 @@ node_runtime.workspace = true
 notifications.workspace = true
 outline.workspace = true
 outline_panel.workspace = true
+p2p_panel.workspace = true
 parking_lot.workspace = true
 paths.workspace = true
 picker.workspace = true
