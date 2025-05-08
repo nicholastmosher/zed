@@ -5,7 +5,7 @@ use std::any::TypeId;
 use command_palette_hooks::CommandPaletteFilter;
 use editor::EditorSettingsControls;
 use feature_flags::{FeatureFlag, FeatureFlagViewExt};
-use gpui::{App, Entity, EventEmitter, FocusHandle, Focusable, actions};
+use gpui::{App, Entity, EventEmitter, FocusHandle, Focusable, actions, rgb};
 use ui::prelude::*;
 use workspace::Workspace;
 use workspace::item::{Item, ItemEvent};
@@ -108,7 +108,7 @@ impl Item for SettingsPage {
 
 impl Render for SettingsPage {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        v_flex()
+        let it = v_flex()
             .p_4()
             .size_full()
             .gap_4()
@@ -126,6 +126,7 @@ impl Render for SettingsPage {
                         .elevation_2(cx)
                         .child(EditorSettingsControls::new()),
                 ),
-            )
+            );
+        div().border_1().border_color(rgb(0xff0000)).child(it)
     }
 }

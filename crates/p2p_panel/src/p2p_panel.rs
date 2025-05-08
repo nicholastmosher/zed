@@ -2,12 +2,13 @@ use std::sync::Arc;
 
 use anyhow::Context as _;
 use db::kvp::KEY_VALUE_STORE;
-use gpui::*;
+use gpui::{prelude::FluentBuilder as _, *};
 use serde::{Deserialize, Serialize};
 use util::ResultExt as _;
+use willow_25::{AuthorisationToken25, NamespaceId25, PayloadDigest25, SubspaceId25};
 use workspace::{
     dock::{DockPosition, PanelEvent},
-    ui::{h_flex, IconName},
+    ui::{v_flex, ContextMenu, IconName, ListItem},
     AppState, Panel, Workspace,
 };
 
@@ -18,6 +19,8 @@ actions!(
     workspace,
     [
         ToggleFocus,
+        CreateDocument,
+        CreateIdentity,
     ]
 );
 
@@ -41,6 +44,10 @@ struct SerializedP2pPanel {
 
 // pub struct ChatPanel {
 pub struct P2pPanel {
+    context_menu: Option<(Entity<ContextMenu>, Point<Pixels>, Subscription)>,
+    people: Vec<String>,
+    documents: Vec<String>,
+
     message_list: ListState,
     width: Option<Pixels>,
     active: bool,
@@ -51,6 +58,15 @@ pub struct P2pPanel {
     open_context_menu: Option<(u64, Subscription)>,
     highlighted_message: Option<(u64, Task<()>)>,
     last_acknowledged_message_id: Option<u64>,
+    store: willow_store_simple_sled::StoreSimpleSled<
+        1024,
+        1024,
+        1024,
+        NamespaceId25,
+        SubspaceId25,
+        PayloadDigest25,
+        AuthorisationToken25,
+    >,
 }
 
 impl P2pPanel {
@@ -115,6 +131,16 @@ impl P2pPanel {
             // }));
 
             let mut this = Self {
+                context_menu: None,
+                people: vec!["Person 1", "Person 2"]
+                    .into_iter()
+                    .map(ToString::to_string)
+                    .collect(),
+                documents: vec!["Document 1", "Document 2"]
+                    .into_iter()
+                    .map(ToString::to_string)
+                    .collect(),
+
                 pending_serialization: Task::ready(None),
                 subscriptions: Vec::new(),
                 is_scrolled_to_bottom: true,
@@ -130,12 +156,101 @@ impl P2pPanel {
                     px(1000.),
                     move |ix, window, cx| div().into_any(),
                 ),
+                store: {
+                    let db = sled::open("my_db").unwrap();
+                    let namespace = NamespaceId25::new_communal();
+                    willow_store_simple_sled::StoreSimpleSled::new(&namespace, db).unwrap()
+                },
             };
 
             // this.subscriptions.push(cx.subscribe(a, b));
 
             this
         })
+    }
+
+    fn render_people(
+        &mut self,
+        window: &mut Window,
+        cx: &mut Context<'_, Self>,
+    ) -> impl IntoElement {
+        div()
+            .flex_grow()
+            .bg(rgb(0x00bc7d))
+            .py_2()
+            .children(self.people.iter().enumerate().map(|(i, it)| {
+                ListItem::new(SharedString::from(format!("people-{i}-{it}")))
+                    .child(SharedString::from(it))
+            }))
+    }
+
+    pub fn render_documents(
+        &mut self,
+        window: &mut Window,
+        cx: &mut Context<'_, Self>,
+    ) -> impl IntoElement {
+        div()
+            .on_action(cx.listener(Self::create_document))
+            .on_action(cx.listener(Self::create_identity))
+            .flex_grow()
+            .bg(rgb(0xad46ff))
+            .py_2()
+            .children(self.documents.iter().enumerate().map(|(i, it)| {
+                ListItem::new(SharedString::from(format!("documents-{i}-{it}")))
+                    .child(SharedString::from(it))
+                    .on_secondary_mouse_down(cx.listener(
+                        |this, event: &MouseDownEvent, window, cx| {
+                            // Stop propagation to prevent the catch-all context menu for the project
+                            // panel from being deployed.
+                            cx.stop_propagation();
+                            this.deploy_context_menu(event.position, window, cx);
+                        },
+                    ))
+            }))
+    }
+
+    pub fn create_document(
+        &mut self,
+        action: &CreateDocument,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.documents
+            .push(format!("Document {}", self.documents.len()));
+        cx.notify();
+    }
+
+    pub fn create_identity(
+        &mut self,
+        action: &CreateIdentity,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.people.push(format!("Identity {}", self.people.len()));
+        cx.notify();
+    }
+
+    fn deploy_context_menu(
+        &mut self,
+        position: Point<Pixels>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let context_menu = ContextMenu::build(window, cx, |menu, _, _| {
+            menu.context(self.focus_handle.clone()).map(|menu| {
+                menu.action("Create Document", Box::new(CreateDocument))
+                    .action("Create Identity", Box::new(CreateIdentity))
+            })
+        });
+
+        window.focus(&context_menu.focus_handle(cx));
+        let subscription = cx.subscribe(&context_menu, |this, _, _: &DismissEvent, cx| {
+            this.context_menu.take();
+            cx.notify();
+        });
+        self.context_menu = Some((context_menu, position, subscription));
+
+        cx.notify();
     }
 }
 
@@ -172,7 +287,9 @@ impl Panel for P2pPanel {
         self.width.unwrap_or(px(300.))
     }
 
-    fn set_size(&mut self, size: Option<Pixels>, window: &mut Window, cx: &mut Context<Self>) {}
+    fn set_size(&mut self, size: Option<Pixels>, window: &mut Window, cx: &mut Context<Self>) {
+        self.width = size;
+    }
 
     fn icon(&self, window: &Window, cx: &App) -> Option<workspace::ui::IconName> {
         Some(IconName::DatabaseZap)
@@ -193,6 +310,20 @@ impl Panel for P2pPanel {
 
 impl Render for P2pPanel {
     fn render(&mut self, window: &mut Window, cx: &mut Context<'_, Self>) -> impl IntoElement {
-        h_flex().size_full().child("Hello, world!")
+        v_flex()
+            .on_action(cx.listener(Self::create_document))
+            .size_full()
+            .child(self.render_people(window, cx))
+            .child(div().border_1())
+            .child(self.render_documents(window, cx))
+            .children(self.context_menu.as_ref().map(|(menu, position, _)| {
+                deferred(
+                    anchored()
+                        .position(*position)
+                        .anchor(gpui::Corner::TopLeft)
+                        .child(menu.clone()),
+                )
+                .with_priority(1)
+            }))
     }
 }

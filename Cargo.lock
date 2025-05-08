@@ -92,7 +92,7 @@ dependencies = [
  "menu",
  "multi_buffer",
  "ordered-float 2.10.1",
- "parking_lot",
+ "parking_lot 0.12.3",
  "paths",
  "picker",
  "project",
@@ -171,7 +171,7 @@ dependencies = [
  "libc",
  "log",
  "miow",
- "parking_lot",
+ "parking_lot 0.12.3",
  "piper",
  "polling",
  "regex-automata 0.4.9",
@@ -356,6 +356,9 @@ name = "arbitrary"
 version = "1.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dde20b3d026af13f561bdd0f15edf01fc734f0dafcedbaf42bba506a9517f223"
+dependencies = [
+ "derive_arbitrary",
+]
 
 [[package]]
 name = "arg_enum_proc_macro"
@@ -496,7 +499,7 @@ dependencies = [
  "lsp",
  "menu",
  "multi_buffer",
- "parking_lot",
+ "parking_lot 0.12.3",
  "pretty_assertions",
  "project",
  "prompt_library",
@@ -553,7 +556,7 @@ dependencies = [
  "log",
  "multi_buffer",
  "open_ai",
- "parking_lot",
+ "parking_lot 0.12.3",
  "paths",
  "picker",
  "pretty_assertions",
@@ -619,7 +622,7 @@ dependencies = [
  "gpui",
  "language",
  "language_model",
- "parking_lot",
+ "parking_lot 0.12.3",
  "pretty_assertions",
  "serde",
  "serde_json",
@@ -685,7 +688,7 @@ dependencies = [
  "language",
  "language_model",
  "log",
- "parking_lot",
+ "parking_lot 0.12.3",
  "pretty_assertions",
  "project",
  "rand 0.8.5",
@@ -1141,7 +1144,7 @@ dependencies = [
  "collections",
  "derive_more",
  "gpui",
- "parking_lot",
+ "parking_lot 0.12.3",
  "rodio",
  "util",
  "workspace-hack",
@@ -2764,7 +2767,7 @@ dependencies = [
  "exec",
  "fork",
  "ipc-channel",
- "parking_lot",
+ "parking_lot 0.12.3",
  "paths",
  "plist",
  "release_channel",
@@ -2794,7 +2797,7 @@ dependencies = [
  "http_client",
  "http_client_tls",
  "log",
- "parking_lot",
+ "parking_lot 0.12.3",
  "paths",
  "postage",
  "rand 0.8.5",
@@ -2825,7 +2828,7 @@ dependencies = [
 name = "clock"
 version = "0.1.0"
 dependencies = [
- "parking_lot",
+ "parking_lot 0.12.3",
  "serde",
  "smallvec",
  "workspace-hack",
@@ -2992,7 +2995,7 @@ dependencies = [
  "node_runtime",
  "notifications",
  "open_ai",
- "parking_lot",
+ "parking_lot 0.12.3",
  "pretty_assertions",
  "project",
  "prometheus",
@@ -3160,13 +3163,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "compact_u64"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cfe61992c4cb9ec764c74faebcec021b1e112a785c413431799052d1c05ee47f"
+dependencies = [
+ "arbitrary",
+ "either",
+ "ufotofu",
+ "ufotofu_codec",
+ "ufotofu_codec_endian",
+]
+
+[[package]]
 name = "component"
 version = "0.1.0"
 dependencies = [
  "collections",
  "gpui",
  "linkme",
- "parking_lot",
+ "parking_lot 0.12.3",
  "theme",
  "workspace-hack",
 ]
@@ -3267,7 +3283,7 @@ dependencies = [
  "icons",
  "language_model",
  "log",
- "parking_lot",
+ "parking_lot 0.12.3",
  "postage",
  "project",
  "serde",
@@ -3342,7 +3358,7 @@ dependencies = [
  "lsp",
  "menu",
  "node_runtime",
- "parking_lot",
+ "parking_lot 0.12.3",
  "paths",
  "project",
  "rpc",
@@ -3911,6 +3927,33 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "96a6ac251f4a2aca6b3f91340350eab87ae57c3f127ffeb585e92bd336717991"
 
 [[package]]
+name = "curve25519-dalek"
+version = "4.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "97fb8b7c4503de7d6ae7b42ab72a5a59857b4c937ec27a3d4539dba95b5ab2be"
+dependencies = [
+ "cfg-if",
+ "cpufeatures",
+ "curve25519-dalek-derive",
+ "digest",
+ "fiat-crypto",
+ "rustc_version",
+ "subtle",
+ "zeroize",
+]
+
+[[package]]
+name = "curve25519-dalek-derive"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f46882e17999c6cc590af592290432be3bce0428cb0d5f8b6715e4dc7b383eb3"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.100",
+]
+
+[[package]]
 name = "cxx"
 version = "1.0.153"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3989,7 +4032,7 @@ dependencies = [
  "language",
  "log",
  "node_runtime",
- "parking_lot",
+ "parking_lot 0.12.3",
  "paths",
  "regex",
  "schemars",
@@ -4076,7 +4119,7 @@ dependencies = [
  "hashbrown 0.14.5",
  "lock_api",
  "once_cell",
- "parking_lot_core",
+ "parking_lot_core 0.9.10",
 ]
 
 [[package]]
@@ -4090,7 +4133,7 @@ dependencies = [
  "hashbrown 0.14.5",
  "lock_api",
  "once_cell",
- "parking_lot_core",
+ "parking_lot_core 0.9.10",
 ]
 
 [[package]]
@@ -4243,6 +4286,17 @@ checksum = "28cfac68e08048ae1883171632c2aef3ebc555621ae56fbccce1cbf22dd7f058"
 dependencies = [
  "powerfmt",
  "serde",
+]
+
+[[package]]
+name = "derive_arbitrary"
+version = "1.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "30542c1ad912e0e3d22a1935c290e12e8a29d704a420177a31faad4a601a0800"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.100",
 ]
 
 [[package]]
@@ -4546,6 +4600,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "ed25519"
+version = "2.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "115531babc129696a58c64a4fef0a8bf9e9698629fb97e9e40767d235cfbcd53"
+dependencies = [
+ "pkcs8 0.10.2",
+ "signature 2.2.0",
+]
+
+[[package]]
+name = "ed25519-dalek"
+version = "2.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4a3daa8e81a3963a60642bcc1f90a670680bd4a77535faa384e9d1c79d620871"
+dependencies = [
+ "curve25519-dalek",
+ "ed25519",
+ "rand_core 0.6.4",
+ "serde",
+ "sha2",
+ "subtle",
+ "zeroize",
+]
+
+[[package]]
 name = "editor"
 version = "0.1.0"
 dependencies = [
@@ -4582,7 +4661,7 @@ dependencies = [
  "menu",
  "multi_buffer",
  "ordered-float 2.10.1",
- "parking_lot",
+ "parking_lot 0.12.3",
  "pretty_assertions",
  "project",
  "rand 0.8.5",
@@ -4987,7 +5066,7 @@ dependencies = [
  "language",
  "log",
  "lsp",
- "parking_lot",
+ "parking_lot 0.12.3",
  "semantic_version",
  "serde",
  "serde_json",
@@ -5046,7 +5125,7 @@ dependencies = [
  "log",
  "lsp",
  "node_runtime",
- "parking_lot",
+ "parking_lot 0.12.3",
  "paths",
  "project",
  "release_channel",
@@ -5104,6 +5183,12 @@ dependencies = [
  "workspace-hack",
  "zed_actions",
 ]
+
+[[package]]
+name = "fairly_unsafe_cell"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e19e1ca8da66b9bc3c0c30551af59e29e6cd578c8d4ef232b92bb1a6a9d841c3"
 
 [[package]]
 name = "fallible-iterator"
@@ -5213,6 +5298,12 @@ dependencies = [
  "rand_core 0.6.4",
  "subtle",
 ]
+
+[[package]]
+name = "fiat-crypto"
+version = "0.2.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "28dea519a9695b9977216879a3ebfddf92f1c08c05d984f8996aecd6ecdc811d"
 
 [[package]]
 name = "file_finder"
@@ -5497,7 +5588,7 @@ dependencies = [
  "log",
  "notify",
  "objc",
- "parking_lot",
+ "parking_lot 0.12.3",
  "paths",
  "proto",
  "rope",
@@ -5546,7 +5637,7 @@ dependencies = [
  "bitflags 2.9.0",
  "core-foundation 0.10.0",
  "fsevent-sys 3.1.0",
- "parking_lot",
+ "parking_lot 0.12.3",
  "tempfile",
  "workspace-hack",
 ]
@@ -5652,7 +5743,7 @@ checksum = "1d930c203dd0b6ff06e0201a4a2fe9149b43c684fd4420555b26d21b1a02956f"
 dependencies = [
  "futures-core",
  "lock_api",
- "parking_lot",
+ "parking_lot 0.12.3",
 ]
 
 [[package]]
@@ -5758,6 +5849,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "fxhash"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c31b6d751ae2c7f11320402d34e41349dd1016f8d5d45e48c4312bc8625af50c"
+dependencies = [
+ "byteorder",
+]
+
+[[package]]
 name = "generic-array"
 version = "0.14.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5850,7 +5950,7 @@ dependencies = [
  "gpui",
  "http_client",
  "log",
- "parking_lot",
+ "parking_lot 0.12.3",
  "pretty_assertions",
  "regex",
  "rope",
@@ -6125,7 +6225,7 @@ dependencies = [
  "oo7",
  "open",
  "parking",
- "parking_lot",
+ "parking_lot 0.12.3",
  "pathfinder_geometry",
  "postage",
  "profiling",
@@ -7056,7 +7156,7 @@ dependencies = [
  "http_client",
  "indexmap",
  "indoc",
- "parking_lot",
+ "parking_lot 0.12.3",
  "paths",
  "pretty_assertions",
  "serde",
@@ -7570,7 +7670,7 @@ dependencies = [
  "itertools 0.14.0",
  "log",
  "lsp",
- "parking_lot",
+ "parking_lot 0.12.3",
  "postage",
  "pretty_assertions",
  "rand 0.8.5",
@@ -7640,7 +7740,7 @@ dependencies = [
  "image",
  "log",
  "open_ai",
- "parking_lot",
+ "parking_lot 0.12.3",
  "proto",
  "schemars",
  "serde",
@@ -7970,7 +8070,7 @@ dependencies = [
  "livekit-protocol",
  "livekit-runtime",
  "log",
- "parking_lot",
+ "parking_lot 0.12.3",
  "serde",
  "serde_json",
  "thiserror 1.0.69",
@@ -8063,7 +8163,7 @@ dependencies = [
  "livekit-protocol",
  "livekit-runtime",
  "log",
- "parking_lot",
+ "parking_lot 0.12.3",
  "prost 0.12.6",
  "semver",
  "serde",
@@ -8082,7 +8182,7 @@ dependencies = [
  "livekit-protocol",
  "livekit-runtime",
  "log",
- "parking_lot",
+ "parking_lot 0.12.3",
  "pbjson-types",
  "prost 0.12.6",
  "rand 0.9.0",
@@ -8103,7 +8203,7 @@ source = "git+https://github.com/zed-industries/livekit-rust-sdks?rev=80bb8f4c91
 dependencies = [
  "futures-util",
  "livekit-runtime",
- "parking_lot",
+ "parking_lot 0.12.3",
  "pbjson",
  "pbjson-types",
  "prost 0.12.6",
@@ -8160,7 +8260,7 @@ dependencies = [
  "log",
  "nanoid",
  "objc",
- "parking_lot",
+ "parking_lot 0.12.3",
  "postage",
  "scap",
  "serde",
@@ -8248,7 +8348,7 @@ dependencies = [
  "gpui",
  "log",
  "lsp-types",
- "parking_lot",
+ "parking_lot 0.12.3",
  "postage",
  "release_channel",
  "schemars",
@@ -8514,6 +8614,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "meadowcap"
+version = "0.2.0"
+dependencies = [
+ "compact_u64",
+ "either",
+ "signature 2.2.0",
+ "ufotofu",
+ "ufotofu_codec",
+ "willow-data-model",
+ "willow-encoding",
+]
+
+[[package]]
 name = "media"
 version = "0.1.0"
 dependencies = [
@@ -8705,7 +8818,7 @@ dependencies = [
  "itertools 0.14.0",
  "language",
  "log",
- "parking_lot",
+ "parking_lot 0.12.3",
  "pretty_assertions",
  "project",
  "rand 0.8.5",
@@ -9746,7 +9859,10 @@ dependencies = [
  "gpui",
  "serde",
  "serde_json",
+ "sled",
  "util",
+ "willow-store-simple-sled",
+ "willow_25",
  "workspace",
 ]
 
@@ -9804,12 +9920,37 @@ checksum = "f38d5652c16fde515bb1ecef450ab0f6a219d619a7274976324d5e377f7dceba"
 
 [[package]]
 name = "parking_lot"
+version = "0.11.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7d17b78036a60663b797adeaee46f5c9dfebb86948d1255007a1d6be0271ff99"
+dependencies = [
+ "instant",
+ "lock_api",
+ "parking_lot_core 0.8.6",
+]
+
+[[package]]
+name = "parking_lot"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f1bf18183cf54e8d6059647fc3063646a1801cf30896933ec2311622cc4b9a27"
 dependencies = [
  "lock_api",
- "parking_lot_core",
+ "parking_lot_core 0.9.10",
+]
+
+[[package]]
+name = "parking_lot_core"
+version = "0.8.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "60a2cfe6f0ad2bfc16aefa463b497d5c7a5ecd44a23efa72aa342d90177356dc"
+dependencies = [
+ "cfg-if",
+ "instant",
+ "libc",
+ "redox_syscall 0.2.16",
+ "smallvec",
+ "winapi",
 ]
 
 [[package]]
@@ -10649,6 +10790,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5da3b0203fd7ee5720aa0b5e790b591aa5d3f41c3ed2c34a3a393382198af2f7"
 
 [[package]]
+name = "pollster"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2f3a9f18d041e6d0e102a0a46750538147e5e8992d3b4873aaafee2520b00ce3"
+
+[[package]]
 name = "portable-atomic"
 version = "1.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -10673,9 +10820,9 @@ dependencies = [
  "crossbeam-queue",
  "futures 0.3.31",
  "log",
- "parking_lot",
+ "parking_lot 0.12.3",
  "pin-project",
- "pollster",
+ "pollster 0.2.5",
  "static_assertions",
  "thiserror 1.0.69",
 ]
@@ -10725,7 +10872,7 @@ dependencies = [
  "log",
  "lsp",
  "node_runtime",
- "parking_lot",
+ "parking_lot 0.12.3",
  "paths",
  "serde",
  "serde_json",
@@ -10859,7 +11006,7 @@ dependencies = [
  "log",
  "lsp",
  "node_runtime",
- "parking_lot",
+ "parking_lot 0.12.3",
  "pathdiff",
  "paths",
  "postage",
@@ -10962,7 +11109,7 @@ dependencies = [
  "fnv",
  "lazy_static",
  "memchr",
- "parking_lot",
+ "parking_lot 0.12.3",
  "protobuf",
  "thiserror 2.0.12",
 ]
@@ -11009,7 +11156,7 @@ dependencies = [
  "heed",
  "language",
  "log",
- "parking_lot",
+ "parking_lot 0.12.3",
  "paths",
  "rope",
  "serde",
@@ -11709,7 +11856,7 @@ dependencies = [
  "gpui",
  "itertools 0.14.0",
  "log",
- "parking_lot",
+ "parking_lot 0.12.3",
  "paths",
  "prost 0.9.0",
  "release_channel",
@@ -12109,7 +12256,7 @@ dependencies = [
  "env_logger 0.11.8",
  "futures 0.3.31",
  "gpui",
- "parking_lot",
+ "parking_lot 0.12.3",
  "proto",
  "rand 0.8.5",
  "rsa",
@@ -12812,7 +12959,7 @@ dependencies = [
  "languages",
  "log",
  "open_ai",
- "parking_lot",
+ "parking_lot 0.12.3",
  "project",
  "reqwest_client",
  "serde",
@@ -13230,6 +13377,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "sled"
+version = "0.34.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7f96b4737c2ce5987354855aed3797279def4ebf734436c6aa4552cf8e169935"
+dependencies = [
+ "crc32fast",
+ "crossbeam-epoch",
+ "crossbeam-utils",
+ "fs2",
+ "fxhash",
+ "libc",
+ "log",
+ "parking_lot 0.11.2",
+]
+
+[[package]]
 name = "slotmap"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -13309,7 +13472,7 @@ dependencies = [
  "fs",
  "futures 0.3.31",
  "gpui",
- "parking_lot",
+ "parking_lot 0.12.3",
  "paths",
  "schemars",
  "serde",
@@ -13406,7 +13569,7 @@ dependencies = [
  "futures 0.3.31",
  "indoc",
  "libsqlite3-sys",
- "parking_lot",
+ "parking_lot 0.12.3",
  "smol",
  "sqlformat",
  "thread_local",
@@ -13730,7 +13893,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bf776ba3fa74f83bf4b63c3dcbbf82173db2632ed8452cb2d891d33f459de70f"
 dependencies = [
  "new_debug_unreachable",
- "parking_lot",
+ "parking_lot 0.12.3",
  "phf_shared",
  "precomputed-hash",
  "serde",
@@ -14190,7 +14353,7 @@ dependencies = [
  "futures 0.3.31",
  "gpui",
  "hex",
- "parking_lot",
+ "parking_lot 0.12.3",
  "schemars",
  "serde",
  "serde_json",
@@ -14369,7 +14532,7 @@ dependencies = [
  "gpui",
  "http_client",
  "log",
- "parking_lot",
+ "parking_lot 0.12.3",
  "postage",
  "rand 0.8.5",
  "regex",
@@ -14393,7 +14556,7 @@ dependencies = [
  "indexmap",
  "log",
  "palette",
- "parking_lot",
+ "parking_lot 0.12.3",
  "refineable",
  "schemars",
  "serde",
@@ -14534,7 +14697,7 @@ dependencies = [
  "bstr",
  "fancy-regex 0.13.0",
  "lazy_static",
- "parking_lot",
+ "parking_lot 0.12.3",
  "regex",
  "rustc-hash 1.1.0",
 ]
@@ -14710,7 +14873,7 @@ dependencies = [
  "bytes 1.10.1",
  "libc",
  "mio",
- "parking_lot",
+ "parking_lot 0.12.3",
  "pin-project-lite",
  "signal-hook-registry",
  "socket2",
@@ -15422,9 +15585,50 @@ dependencies = [
 ]
 
 [[package]]
+name = "ufotofu"
+version = "0.6.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5ee04a3c35fa96b457165f62dc0aab38e521d64f35d77b5dd7e77de3c3824c73"
+dependencies = [
+ "arbitrary",
+ "either",
+]
+
+[[package]]
+name = "ufotofu_codec"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2e244ff1b1f644ae8a90abb7d20f636d0811cc0758db61ce39382009f7db5fc7"
+dependencies = [
+ "either",
+ "pollster 0.4.0",
+ "ufotofu",
+ "wb_async_utils",
+]
+
+[[package]]
+name = "ufotofu_codec_endian"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4cb93cb00d9ae0a3d7ba45f779de03faf8aab584c68b4d4266b3377fa90d027d"
+dependencies = [
+ "arbitrary",
+ "either",
+ "ufotofu",
+ "ufotofu_codec",
+]
+
+[[package]]
+name = "ufotofu_queues"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9abd2f0123cc71fa3adf9329b85d9eb863874e489744803f3a41fff59b56968d"
+
+[[package]]
 name = "ui"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "chrono",
  "component",
  "documented",
@@ -15816,7 +16020,7 @@ dependencies = [
  "lsp",
  "multi_buffer",
  "nvim-rs",
- "parking_lot",
+ "parking_lot 0.12.3",
  "picker",
  "project",
  "project_panel",
@@ -16551,6 +16755,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "wb_async_utils"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0959f6010dffb28932c94fcf874ef3588aa9ca050cb0c04ac26622bfc7b2bea6"
+dependencies = [
+ "either",
+ "fairly_unsafe_cell",
+ "ufotofu",
+ "ufotofu_queues",
+]
+
+[[package]]
 name = "web-sys"
 version = "0.3.77"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -16723,6 +16939,58 @@ dependencies = [
 ]
 
 [[package]]
+name = "willow-data-model"
+version = "0.2.0"
+dependencies = [
+ "bytes 1.10.1",
+ "compact_u64",
+ "either",
+ "slab",
+ "ufotofu",
+ "ufotofu_codec",
+ "wb_async_utils",
+ "willow-encoding",
+]
+
+[[package]]
+name = "willow-encoding"
+version = "0.1.0"
+dependencies = [
+ "either",
+ "ufotofu",
+]
+
+[[package]]
+name = "willow-store-simple-sled"
+version = "0.1.0"
+dependencies = [
+ "either",
+ "sled",
+ "ufotofu",
+ "ufotofu_codec",
+ "ufotofu_codec_endian",
+ "ufotofu_queues",
+ "wb_async_utils",
+ "willow-data-model",
+]
+
+[[package]]
+name = "willow_25"
+version = "0.1.0"
+dependencies = [
+ "blake3",
+ "compact_u64",
+ "ed25519-dalek",
+ "meadowcap",
+ "rand 0.8.5",
+ "signature 2.2.0",
+ "ufotofu",
+ "ufotofu_codec",
+ "willow-data-model",
+ "willow-encoding",
+]
+
+[[package]]
 name = "winapi"
 version = "0.3.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -16822,7 +17090,7 @@ checksum = "6001b777f61cafce437201de46a019ed7f4afed3b669f02e5ce4e0759164cb3e"
 dependencies = [
  "clap",
  "ctrlc",
- "parking_lot",
+ "parking_lot 0.12.3",
  "rayon",
  "thiserror 1.0.69",
  "windows 0.58.0",
@@ -17597,7 +17865,7 @@ dependencies = [
  "language",
  "log",
  "node_runtime",
- "parking_lot",
+ "parking_lot 0.12.3",
  "postage",
  "project",
  "remote",
@@ -17804,7 +18072,7 @@ dependencies = [
  "ignore",
  "language",
  "log",
- "parking_lot",
+ "parking_lot 0.12.3",
  "paths",
  "postage",
  "pretty_assertions",
@@ -18198,7 +18466,7 @@ dependencies = [
  "outline",
  "outline_panel",
  "p2p_panel",
- "parking_lot",
+ "parking_lot 0.12.3",
  "paths",
  "picker",
  "profiling",
@@ -18461,7 +18729,7 @@ dependencies = [
  "log",
  "num-traits",
  "once_cell",
- "parking_lot",
+ "parking_lot 0.12.3",
  "rand 0.8.5",
  "regex",
  "thiserror 1.0.69",

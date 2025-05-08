@@ -15,6 +15,11 @@ serde.workspace = true
 serde_json.workspace = true
 util.workspace = true
 workspace.workspace = true
+# willow-store-simple-sled = "0.1"
+# willow_25 = "0.1"
+willow-store-simple-sled.path = "../../../../earthstar-project/willow-rs/store_simple_sled"
+willow_25.path = "../../../../earthstar-project/willow-rs/willow_25"
+sled = "0.34.7"
 
 [lints]
 workspace = true
