@@ -91,7 +91,7 @@ use gpui::{
     SharedString, Size, Stateful, Styled, StyledText, Subscription, Task, TextStyle,
     TextStyleRefinement, UTF16Selection, UnderlineStyle, UniformListScrollHandle, WeakEntity,
     WeakFocusHandle, Window, div, impl_actions, point, prelude::*, pulsating_between, px, relative,
-    size,
+    rgb, size,
 };
 use highlight_matching_bracket::refresh_matching_bracket_highlights;
 use hover_links::{HoverLink, HoveredLinkState, InlayHighlight, find_file};
@@ -19679,7 +19679,7 @@ impl Render for Editor {
             EditorMode::Full { .. } => cx.theme().colors().editor_background,
         };
 
-        EditorElement::new(
+        let it = EditorElement::new(
             &cx.entity(),
             EditorStyle {
                 background,
@@ -19692,7 +19692,13 @@ impl Render for Editor {
                 inline_completion_styles: make_suggestion_styles(cx),
                 unnecessary_code_fade: ThemeSettings::get_global(cx).unnecessary_code_fade,
             },
-        )
+        );
+
+        div()
+            .border_2()
+            .border_color(rgb(0xff0000))
+            .size_full()
+            .child(it)
     }
 }
 
