@@ -19694,11 +19694,12 @@ impl Render for Editor {
             },
         );
 
-        div()
-            .border_2()
-            .border_color(rgb(0xff0000))
-            .size_full()
-            .child(it)
+        // div()
+        //     .border_2()
+        //     .border_color(rgb(0xff0000))
+        //     .size_full()
+        //     .child(it)
+        it
     }
 }
 

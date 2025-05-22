@@ -176,7 +176,7 @@ impl P2pPanel {
     ) -> impl IntoElement {
         div()
             .flex_grow()
-            .bg(rgb(0x00bc7d))
+            .bg(rgba(0xffec3777))
             .py_2()
             .children(self.people.iter().enumerate().map(|(i, it)| {
                 ListItem::new(SharedString::from(format!("people-{i}-{it}")))
@@ -193,7 +193,7 @@ impl P2pPanel {
             .on_action(cx.listener(Self::create_document))
             .on_action(cx.listener(Self::create_identity))
             .flex_grow()
-            .bg(rgb(0xad46ff))
+            .bg(rgba(0x4ae43277))
             .py_2()
             .children(self.documents.iter().enumerate().map(|(i, it)| {
                 ListItem::new(SharedString::from(format!("documents-{i}-{it}")))
