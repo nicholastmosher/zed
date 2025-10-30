@@ -101,7 +101,7 @@ fn files_not_created_on_launch(errors: HashMap<io::ErrorKind, Vec<&Path>>) {
     eprintln!("{message}: {error_details}");
     Application::with_platform(gpui_platform::current_platform(false))
         .with_quit_mode(QuitMode::Explicit)
-        .run(move |cx| {
+        .add_plugins(move |cx: &mut App| {
             if let Ok(window) = cx.open_window(gpui::WindowOptions::default(), |_, cx| {
                 cx.new(|_| gpui::Empty)
             }) {
@@ -126,6 +126,7 @@ fn files_not_created_on_launch(errors: HashMap<io::ErrorKind, Vec<&Path>>) {
                 fail_to_open_window(anyhow::anyhow!("{message}: {error_details}"), cx)
             }
         })
+        .run();
 }
 
 fn fail_to_open_window_async(e: anyhow::Error, cx: &mut AsyncApp) {
@@ -178,6 +179,7 @@ static STARTUP_TIME: OnceLock<Instant> = OnceLock::new();
 
 pub fn init(cx: &mut App) {
     STARTUP_TIME.get_or_init(|| Instant::now());
+    cx.with_assets(Assets);
 
     #[cfg(unix)]
     util::prevent_root_execution();

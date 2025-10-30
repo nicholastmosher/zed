@@ -762,6 +762,7 @@ unindent = "0.2.0"
 url = "2.2"
 urlencoding = "2.1.2"
 uuid = { version = "1.1.2", features = ["v4", "v5", "v7", "serde"] }
+variadics_please = "1.1.0"
 walkdir = "2.5"
 wasm-encoder = "0.221"
 wasmparser = "0.221"

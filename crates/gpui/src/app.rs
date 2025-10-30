@@ -50,6 +50,7 @@ use crate::{
     PromptLevel, Render, RenderImage, RenderablePromptHandle, Reservation, ScreenCaptureSource,
     SharedString, SubscriberSet, Subscription, SvgRenderer, Task, TextRenderingMode, TextSystem,
     ThermalState, Window, WindowAppearance, WindowHandle, WindowId, WindowInvalidator,
+    app::plugin::{Plugin, Plugins},
     colors::{Colors, GlobalColors},
     hash, init_app_menus,
 };
@@ -59,6 +60,7 @@ mod context;
 mod entity_map;
 #[cfg(any(test, feature = "test-support"))]
 mod headless_app_context;
+mod plugin;
 #[cfg(any(test, feature = "test-support"))]
 mod test_app;
 #[cfg(any(test, feature = "test-support"))]
@@ -175,17 +177,23 @@ impl Application {
         self
     }
 
-    /// Start the application. The provided callback will be called once the
-    /// app is fully launched.
-    pub fn run<F>(self, on_finish_launching: F)
-    where
-        F: 'static + FnOnce(&mut App),
-    {
+    /// Adds a plugin or group of plugins to the appliication
+    pub fn add_plugins<M>(mut self, plugins: impl Plugins<M>) -> Self {
+        let mut context_lock = self.0.borrow_mut();
+        plugins.add_to_app(&mut context_lock.0);
+        drop(context_lock);
+        self
+    }
+
+    /// Start the application. All plugins will be initialized.
+    pub fn run(self) {
         let this = self.0.clone();
         let platform = self.0.borrow().platform.clone();
         platform.run(Box::new(move || {
             let cx = &mut *this.borrow_mut();
-            on_finish_launching(cx);
+            while let Some(plugin) = cx.plugins.pop_front() {
+                plugin.build(cx);
+            }
         }));
     }
 
@@ -208,7 +216,7 @@ impl Application {
         let this = Rc::downgrade(&self.0);
         self.0.borrow_mut().platform.on_reopen(Box::new(move || {
             if let Some(app) = this.upgrade() {
-                callback(&mut app.borrow_mut());
+                callback(&mut *app.borrow_mut());
             }
         }));
         self
@@ -656,6 +664,8 @@ pub struct App {
     // Otherwise it may report false positives.
     #[cfg(any(test, feature = "leak-detection"))]
     _ref_counts: Arc<RwLock<EntityRefCounts>>,
+
+    pub(crate) plugins: VecDeque<Box<dyn Plugin>>,
 }
 
 impl App {
@@ -734,6 +744,7 @@ impl App {
                 inspector_element_registry: InspectorElementRegistry::default(),
                 quit_mode: QuitMode::default(),
                 quitting: false,
+                plugins: VecDeque::new(),
 
                 #[cfg(any(test, feature = "test-support", debug_assertions))]
                 name: None,
@@ -745,8 +756,8 @@ impl App {
             }),
         });
 
-        init_app_menus(platform.as_ref(), &app.borrow());
-        SystemWindowTabController::init(&mut app.borrow_mut());
+        init_app_menus(platform.as_ref(), &*app.borrow());
+        SystemWindowTabController::init(&mut *app.borrow_mut());
 
         platform.on_keyboard_layout_change(Box::new({
             let app = Rc::downgrade(&app);
@@ -815,6 +826,14 @@ impl App {
     #[cfg(any(test, feature = "leak-detection"))]
     pub fn assert_no_new_leaks(&self, snapshot: &LeakDetectorSnapshot) {
         self.entities.assert_no_new_leaks(snapshot)
+    }
+
+    /// Assign an assets source for the application.
+    pub fn with_assets(&mut self, asset_source: impl AssetSource) -> &Self {
+        let asset_source = Arc::new(asset_source);
+        self.asset_source = asset_source.clone();
+        self.svg_renderer = SvgRenderer::new(asset_source);
+        self
     }
 
     /// Quit the application gracefully. Handlers registered with [`Context::on_app_quit`]
