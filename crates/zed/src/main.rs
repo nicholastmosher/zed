@@ -87,7 +87,7 @@ fn files_not_created_on_launch(errors: HashMap<io::ErrorKind, Vec<&Path>>) {
         .collect::<Vec<_>>().join("\n\n");
 
     eprintln!("{message}: {error_details}");
-    Application::new().run(move |cx| {
+    Application::new().add_plugins(move |cx: &mut App| {
         if let Ok(window) = cx.open_window(gpui::WindowOptions::default(), |_, cx| {
             cx.new(|_| gpui::Empty)
         }) {
@@ -111,7 +111,7 @@ fn files_not_created_on_launch(errors: HashMap<io::ErrorKind, Vec<&Path>>) {
         } else {
             fail_to_open_window(anyhow::anyhow!("{message}: {error_details}"), cx)
         }
-    })
+    }).run();
 }
 
 fn fail_to_open_window_async(e: anyhow::Error, cx: &mut AsyncApp) {
@@ -160,7 +160,9 @@ fn fail_to_open_window(e: anyhow::Error, _cx: &mut App) {
     }
 }
 
-pub fn main() {
+pub fn init(cx: &mut App) {
+    cx.with_assets(Assets);
+
     #[cfg(unix)]
     util::prevent_root_execution();
 
@@ -270,14 +272,12 @@ pub fn main() {
     #[cfg(windows)]
     check_for_conpty_dll();
 
-    let app = Application::new().with_assets(Assets);
-
-    let system_id = app.background_executor().block(system_id()).ok();
-    let installation_id = app.background_executor().block(installation_id()).ok();
+    let system_id = cx.background_executor().block(system_id()).ok();
+    let installation_id = cx.background_executor().block(installation_id()).ok();
     let session_id = Uuid::new_v4().to_string();
-    let session = app.background_executor().block(Session::new());
+    let session = cx.background_executor().block(Session::new());
 
-    app.background_executor()
+    cx.background_executor()
         .spawn(crashes::init(InitCrashHandler {
             session_id: session_id.clone(),
             zed_version: app_version.to_string(),
@@ -321,7 +321,7 @@ pub fn main() {
     let git_hosting_provider_registry = Arc::new(GitHostingProviderRegistry::new());
     let git_binary_path =
         if cfg!(target_os = "macos") && option_env!("ZED_BUNDLE").as_deref() == Some("true") {
-            app.path_for_auxiliary_executable("git")
+            cx.path_for_auxiliary_executable("git")
                 .context("could not find git binary path")
                 .log_err()
         } else {
@@ -329,26 +329,26 @@ pub fn main() {
         };
     log::info!("Using git binary path: {:?}", git_binary_path);
 
-    let fs = Arc::new(RealFs::new(git_binary_path, app.background_executor()));
+    let fs = Arc::new(RealFs::new(git_binary_path, cx.background_executor().clone()));
     let user_settings_file_rx = watch_config_file(
-        &app.background_executor(),
+        &cx.background_executor(),
         fs.clone(),
         paths::settings_file().clone(),
     );
     let global_settings_file_rx = watch_config_file(
-        &app.background_executor(),
+        &cx.background_executor(),
         fs.clone(),
         paths::global_settings_file().clone(),
     );
     let user_keymap_file_rx = watch_config_file(
-        &app.background_executor(),
+        &cx.background_executor(),
         fs.clone(),
         paths::keymap_file().clone(),
     );
 
     let (shell_env_loaded_tx, shell_env_loaded_rx) = oneshot::channel();
     if !stdout_is_a_pty() {
-        app.background_executor()
+        cx.background_executor()
             .spawn(async {
                 #[cfg(unix)]
                 util::load_login_shell_environment().await.log_err();
@@ -359,7 +359,7 @@ pub fn main() {
         drop(shell_env_loaded_tx)
     }
 
-    app.on_open_urls({
+    cx.on_open_urls({
         let open_listener = open_listener.clone();
         move |urls| {
             open_listener.open(RawOpenRequest {
@@ -369,7 +369,7 @@ pub fn main() {
             })
         }
     });
-    app.on_reopen(move |cx| {
+    cx.on_reopen(move |cx| {
         if let Some(app_state) = AppState::try_global(cx).and_then(|app_state| app_state.upgrade())
         {
             cx.spawn({
@@ -384,7 +384,7 @@ pub fn main() {
         }
     });
 
-    app.run(move |cx| {
+    // cx.run(move |cx| {
         menu::init();
         zed_actions::init();
 
@@ -753,7 +753,7 @@ pub fn main() {
             }
         })
         .detach();
-    });
+    // });
 }
 
 fn handle_open_request(request: OpenRequest, app_state: Arc<AppState>, cx: &mut App) {

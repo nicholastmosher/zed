@@ -470,6 +470,7 @@ aws-smithy-runtime-api = { version = "1.7.4", features = ["http-1x", "client"] }
 aws-smithy-types = { version = "1.3.0", features = ["http-body-1-x"] }
 backtrace = "0.3"
 base64 = "0.22"
+bevy_utils_proc_macros = "0.15.3"
 bincode = "1.2.1"
 bitflags = "2.6.0"
 blade-graphics = { version = "0.7.0" }

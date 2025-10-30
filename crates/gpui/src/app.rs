@@ -42,6 +42,7 @@ use crate::{
     PromptButton, PromptHandle, PromptLevel, Render, RenderImage, RenderablePromptHandle,
     Reservation, ScreenCaptureSource, SharedString, SubscriberSet, Subscription, SvgRenderer, Task,
     TextSystem, Window, WindowAppearance, WindowHandle, WindowId, WindowInvalidator,
+    app::plugin::{Plugin, Plugins},
     colors::{Colors, GlobalColors},
     current_platform, hash, init_app_menus,
 };
@@ -49,6 +50,7 @@ use crate::{
 mod async_context;
 mod context;
 mod entity_map;
+mod plugin;
 #[cfg(any(test, feature = "test-support"))]
 mod test_context;
 
@@ -169,17 +171,23 @@ impl Application {
         self
     }
 
-    /// Start the application. The provided callback will be called once the
-    /// app is fully launched.
-    pub fn run<F>(self, on_finish_launching: F)
-    where
-        F: 'static + FnOnce(&mut App),
-    {
+    /// Adds a plugin or group of plugins to the appliication
+    pub fn add_plugins<M>(mut self, plugins: impl Plugins<M>) -> Self {
+        let mut context_lock = self.0.borrow_mut();
+        plugins.add_to_app(&mut context_lock.0);
+        drop(context_lock);
+        self
+    }
+
+    /// Start the application. All plugins will be initialized.
+    pub fn run(self) {
         let this = self.0.clone();
         let platform = self.0.borrow().platform.clone();
         platform.run(Box::new(move || {
             let cx = &mut *this.borrow_mut();
-            on_finish_launching(cx);
+            while let Some(plugin) = cx.plugins.pop_front() {
+                plugin.build(cx);
+            }
         }));
     }
 
@@ -589,6 +597,7 @@ pub struct App {
     #[cfg(any(test, feature = "test-support", debug_assertions))]
     pub(crate) name: Option<&'static str>,
     quitting: bool,
+    pub(crate) plugins: VecDeque<Box<dyn Plugin>>,
 }
 
 impl App {
@@ -660,6 +669,7 @@ impl App {
                 #[cfg(any(feature = "inspector", debug_assertions))]
                 inspector_element_registry: InspectorElementRegistry::default(),
                 quitting: false,
+                plugins: VecDeque::new(),
 
                 #[cfg(any(test, feature = "test-support", debug_assertions))]
                 name: None,
@@ -691,6 +701,14 @@ impl App {
         }));
 
         app
+    }
+
+    /// Assign an assets source for the application.
+    pub fn with_assets(&mut self, asset_source: impl AssetSource) -> &Self {
+        let asset_source = Arc::new(asset_source);
+        self.asset_source = asset_source.clone();
+        self.svg_renderer = SvgRenderer::new(asset_source);
+        self
     }
 
     /// Quit the application gracefully. Handlers registered with [`Context::on_app_quit`]
@@ -743,6 +761,31 @@ impl App {
         );
         activate();
         subscription
+    }
+
+    /// Register a handler to be invoked when the platform instructs the application
+    /// to open one or more URLs.
+    pub fn on_open_urls<F>(&self, mut callback: F) -> &Self
+    where
+        F: 'static + FnMut(Vec<String>),
+    {
+        self.platform.on_open_urls(Box::new(callback));
+        self
+    }
+
+    /// Invokes a handler when an already-running application is launched.
+    /// On macOS, this can occur when the application icon is double-clicked or the app is launched via the dock.
+    pub fn on_reopen<F>(&self, mut callback: F) -> &Self
+    where
+        F: 'static + FnMut(&mut App),
+    {
+        let this = self.this.clone();
+        self.platform.on_reopen(Box::new(move || {
+            if let Some(app) = this.upgrade() {
+                callback(&mut app.borrow_mut());
+            }
+        }));
+        self
     }
 
     /// Gracefully quit the application via the platform's standard routine.
