@@ -23,44 +23,47 @@ actions!(livekit_client, [Quit]);
 fn main() {
     SimpleLogger::init(LevelFilter::Info, Default::default()).expect("could not initialize logger");
 
-    gpui_platform::application().run(|cx| {
-        #[cfg(any(test, feature = "test-support"))]
-        println!("USING TEST LIVEKIT");
+    gpui_platform::application()
+        .add_plugin(|cx| {
+            #[cfg(any(test, feature = "test-support"))]
+            println!("USING TEST LIVEKIT");
 
-        #[cfg(not(any(test, feature = "test-support")))]
-        println!("USING REAL LIVEKIT");
+            #[cfg(not(any(test, feature = "test-support")))]
+            println!("USING REAL LIVEKIT");
 
-        gpui_tokio::init(cx);
+            gpui_tokio::init(cx);
 
-        cx.activate(true);
-        cx.on_action(quit);
-        cx.bind_keys([KeyBinding::new("cmd-q", Quit, None)]);
-        cx.set_menus([Menu::new("Zed").items([MenuItem::action("Quit", Quit)])]);
+            cx.activate(true);
+            cx.on_action(quit);
+            cx.bind_keys([KeyBinding::new("cmd-q", Quit, None)]);
+            cx.set_menus([Menu::new("Zed").items([MenuItem::action("Quit", Quit)])]);
 
-        let livekit_url = std::env::var("LIVEKIT_URL").unwrap_or("http://localhost:7880".into());
-        let livekit_key = std::env::var("LIVEKIT_KEY").unwrap_or("devkey".into());
-        let livekit_secret = std::env::var("LIVEKIT_SECRET").unwrap_or("secret".into());
-        let height = px(800.);
-        let width = px(800.);
+            let livekit_url =
+                std::env::var("LIVEKIT_URL").unwrap_or("http://localhost:7880".into());
+            let livekit_key = std::env::var("LIVEKIT_KEY").unwrap_or("devkey".into());
+            let livekit_secret = std::env::var("LIVEKIT_SECRET").unwrap_or("secret".into());
+            let height = px(800.);
+            let width = px(800.);
 
-        cx.spawn(async move |cx| {
-            let mut windows = Vec::new();
-            for i in 0..2 {
-                let token = token::create(
-                    &livekit_key,
-                    &livekit_secret,
-                    Some(&format!("test-participant-{i}")),
-                    VideoGrant::to_join("wtej-trty"),
-                )
-                .unwrap();
+            cx.spawn(async move |cx| {
+                let mut windows = Vec::new();
+                for i in 0..2 {
+                    let token = token::create(
+                        &livekit_key,
+                        &livekit_secret,
+                        Some(&format!("test-participant-{i}")),
+                        VideoGrant::to_join("wtej-trty"),
+                    )
+                    .unwrap();
 
-                let bounds = bounds(point(width * i, px(0.0)), size(width, height));
-                let window = LivekitWindow::new(livekit_url.clone(), token, bounds, cx).await;
-                windows.push(window);
-            }
+                    let bounds = bounds(point(width * i, px(0.0)), size(width, height));
+                    let window = LivekitWindow::new(livekit_url.clone(), token, bounds, cx).await;
+                    windows.push(window);
+                }
+            })
+            .detach();
         })
-        .detach();
-    });
+        .run();
 }
 
 fn quit(_: &Quit, cx: &mut gpui::App) {
