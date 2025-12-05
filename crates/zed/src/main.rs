@@ -55,6 +55,14 @@ use zed::{
 
 use crate::zed::{OpenRequestKind, eager_load_active_theme_and_icon_theme};
 
+pub mod unstable {
+    pub use db;
+    pub use gpui;
+    pub use settings;
+    pub use util;
+    pub use workspace;
+}
+
 #[cfg(feature = "mimalloc")]
 #[global_allocator]
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
