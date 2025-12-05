@@ -23308,6 +23308,7 @@ dependencies = [
  "toolchain_selector",
  "tracing",
  "ui",
+ "ui_input",
  "ui_prompt",
  "url",
  "urlencoding",

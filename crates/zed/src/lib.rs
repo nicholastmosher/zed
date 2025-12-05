@@ -66,6 +66,22 @@ use zed::{
 
 use crate::zed::{CrashHandler, OpenRequestKind, eager_load_active_theme_and_icon_theme};
 
+pub mod unstable {
+    pub use component;
+    pub use db;
+    pub use editor;
+    pub use gpui;
+    pub use gpui_platform;
+    pub use gpui_tokio;
+    pub use menu;
+    pub use paths;
+    pub use settings;
+    pub use ui;
+    pub use ui_input;
+    pub use util;
+    pub use workspace;
+}
+
 #[cfg(feature = "mimalloc")]
 #[global_allocator]
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
