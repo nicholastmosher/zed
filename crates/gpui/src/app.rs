@@ -998,6 +998,31 @@ impl App {
         subscription
     }
 
+    /// Register a handler to be invoked when the platform instructs the application
+    /// to open one or more URLs.
+    pub fn on_open_urls<F>(&self, mut callback: F) -> &Self
+    where
+        F: 'static + FnMut(Vec<String>),
+    {
+        self.platform.on_open_urls(Box::new(callback));
+        self
+    }
+
+    /// Invokes a handler when an already-running application is launched.
+    /// On macOS, this can occur when the application icon is double-clicked or the app is launched via the dock.
+    pub fn on_reopen<F>(&self, mut callback: F) -> &Self
+    where
+        F: 'static + FnMut(&mut App),
+    {
+        let this = self.this.clone();
+        self.platform.on_reopen(Box::new(move || {
+            if let Some(app) = this.upgrade() {
+                callback(&mut *app.borrow_mut());
+            }
+        }));
+        self
+    }
+
     /// Gracefully quit the application via the platform's standard routine.
     pub fn quit(&self) {
         self.platform.quit();

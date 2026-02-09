@@ -53,6 +53,10 @@ visual-tests = [
     "title_bar/test-support",
 ]
 
+[lib]
+name = "zed"
+path = "src/lib.rs"
+
 [[bin]]
 name = "zed"
 path = "src/main.rs"
