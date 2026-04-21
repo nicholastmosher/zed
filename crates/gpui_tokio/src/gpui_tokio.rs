@@ -1,6 +1,6 @@
 use std::future::Future;
 
-use gpui::{App, AppContext, Global, ReadGlobal, Task};
+use gpui::{App, AppContext, Global, Task};
 use gpui_util::defer;
 
 pub use tokio::task::JoinError;
@@ -94,7 +94,7 @@ impl Tokio {
         })
     }
 
-    pub fn handle(cx: &App) -> tokio::runtime::Handle {
-        GlobalTokio::global(cx).handle.clone()
+    pub fn handle<C: AppContext>(cx: &C) -> tokio::runtime::Handle {
+        cx.read_global::<GlobalTokio, _>(|it, _cx| it.handle.clone())
     }
 }
